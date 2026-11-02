@@ -119,7 +119,16 @@ def build(inp, origin_lat, origin_lon, source="ltown"):
                         "source": source, "source_tag": n, "source_unit": "m",
                         "mount_level_m": {"ref": "above_ground", "value": 0}, "range_lo": 0, "range_hi": 100,
                         "expected_interval_s": 300})
-    return {"regions": [region], "systems": [system], "sites": sites, "components": comps, "sensors": sensors}
+    feats = []
+    for r in secs["PIPES"]:
+        a_, b_ = r[1], r[2]
+        if a_ in xy and b_ in xy:
+            (la1, lo1), (la2, lo2) = ll(a_), ll(b_)
+            feats.append({"type": "Feature", "properties": {"id": r[0], "diameter_mm": float(r[4])},
+                          "geometry": {"type": "LineString", "coordinates": [[lo1, la1], [lo2, la2]]}})
+    layer = {"key": "ltown-pipes", "system": "ltown-dw", "name": "Water mains", "kind": "pipes",
+             "geojson": {"type": "FeatureCollection", "features": feats}}
+    return {"regions": [region], "systems": [system], "layers": [layer], "sites": sites, "components": comps, "sensors": sensors}
 
 
 def main(argv=None):

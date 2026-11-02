@@ -300,5 +300,6 @@
  "lvl.alarm": "báo động",
  "map.no_tiles": "Không có bản đồ nền: mạng lưới demo này đặt ở vị trí giả định.",
  "site.limits": "Giới hạn",
- "al.returns": "Đã quay lại {n} lần kể từ khi bắt đầu; lần hết gần nhất lúc {time}."
+ "al.returns": "Đã quay lại {n} lần kể từ khi bắt đầu; lần hết gần nhất lúc {time}.",
+ "lg.pipes": "Ống chính (độ dày theo cỡ ống)"
 }

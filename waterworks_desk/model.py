@@ -53,6 +53,7 @@ KINDS = {
              ("name", "site_type", "zone_id", "lat", "lon", "ground_level_m", "floor_level_m", "overflow_level_m",
               "area_curve_json", "criticality", "note")),
     "component_model": ("component_models", None, ("component_type", "maker", "model", "data_json")),
+    "layer": ("map_layers", ("system", "system_id", "systems"), ("name", "kind", "geojson")),
     "component": ("components", ("site", "site_id", "sites"),
                   ("name", "component_type", "model_id", "serial", "install_date", "criticality", "note")),
     "sensor": ("sensors", ("site", "site_id", "sites"),
@@ -63,7 +64,7 @@ KINDS = {
 HAS_STATUS = {"system", "zone", "site", "component", "sensor"}
 CHILDREN = {"system": [("zone", "system_id"), ("site", "system_id")],
             "site": [("component", "site_id"), ("sensor", "site_id")]}
-BUNDLE_ORDER = ("region", "system", "zone", "site", "component_model", "component", "sensor")
+BUNDLE_ORDER = ("region", "system", "layer", "zone", "site", "component_model", "component", "sensor")
 
 
 class SetupError(ValueError):
@@ -269,6 +270,25 @@ def _clean(conn, kind, data, existing, known_sources):
                     cols["area_curve_json"] = json.dumps(pts)
             except (TypeError, ValueError):
                 errors.append("the area curve should be pairs of [depth in m, area in m²]")
+    elif kind == "layer":
+        take("kind", text)
+        if "geojson" in data:
+            g = data["geojson"]
+            try:
+                g = json.loads(g) if isinstance(g, str) else g
+                if not isinstance(g, dict) or g.get("type") not in ("FeatureCollection", "Feature"):
+                    raise ValueError
+                for f in (g.get("features") or [g]):
+                    for x, y, *_ in _coords(f.get("geometry") or {}):
+                        if not (-180 <= x <= 180 and -90 <= y <= 90):
+                            raise SetupError(["the map layer has a point outside the world (is it in lat/lon, WGS84?)"])
+                cols["geojson"] = json.dumps(g, separators=(",", ":"))
+            except SetupError as e:
+                errors.extend(e.errors)
+            except (TypeError, ValueError):
+                errors.append("a map layer must be GeoJSON (a FeatureCollection)")
+        elif existing is None:
+            errors.append("a map layer needs its GeoJSON")
     elif kind == "component_model":
         take("component_type", text)
         take("maker", text)
@@ -343,6 +363,18 @@ def _clean(conn, kind, data, existing, known_sources):
             except SetupError as e:
                 errors.extend(e.errors)
     return cols, errors, warnings
+
+
+def _coords(geom):
+    """Every [lon, lat] in a GeoJSON geometry."""
+    c = geom.get("coordinates")
+    def walk(v):
+        if isinstance(v, (list, tuple)) and v and isinstance(v[0], (int, float)):
+            yield v
+        elif isinstance(v, (list, tuple)):
+            for x in v:
+                yield from walk(x)
+    return list(walk(c)) if c is not None else []
 
 
 def save(conn, kind, data, actor, known_sources=None, commit=True, audit=True):
@@ -580,6 +612,7 @@ def export_bundle(conn, include_retired=False, only=None):
     """Everything set up by hand, as a bundle that import_bundle can read back."""
     out = {}
     refs = {"system": ("region", "regions", "region_id"), "zone": ("system", "systems", "system_id"),
+            "layer": ("system", "systems", "system_id"),
             "site": ("system", "systems", "system_id"), "component": ("site", "sites", "site_id"),
             "sensor": ("site", "sites", "site_id")}
     for kind in BUNDLE_ORDER:
@@ -606,7 +639,7 @@ def export_bundle(conn, include_retired=False, only=None):
                     d["component"] = conn.execute("SELECT key FROM components WHERE id=?", (v,)).fetchone()[0]
                 elif c == "model_id":
                     d["model"] = conn.execute("SELECT key FROM component_models WHERE id=?", (v,)).fetchone()[0]
-                elif c in ("area_curve_json", "boundary_json", "data_json"):
+                elif c in ("area_curve_json", "boundary_json", "data_json", "geojson"):
                     d[c] = json.loads(v)
                 else:
                     d[c] = v

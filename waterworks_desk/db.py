@@ -151,6 +151,15 @@ CREATE TABLE IF NOT EXISTS alerts (
 );
 CREATE INDEX IF NOT EXISTS alerts_open ON alerts (end_ms, severity);
 CREATE INDEX IF NOT EXISTS alerts_ident ON alerts (ident, end_ms);
+CREATE TABLE IF NOT EXISTS map_layers (       -- lines and areas drawn under the sites: pipes, sewers, catchments
+  id INTEGER PRIMARY KEY,
+  key TEXT NOT NULL UNIQUE,
+  system_id INTEGER NOT NULL REFERENCES systems(id),
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'pipes',       -- pipes, sewers, drains, boundary, other
+  geojson TEXT NOT NULL,                    -- a GeoJSON FeatureCollection in WGS84
+  created_ms INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS pending_changes (   -- edits to live items wait here until someone applies them
   kind TEXT NOT NULL,
   key TEXT NOT NULL,

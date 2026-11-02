@@ -300,5 +300,6 @@
  "lvl.alarm": "alarm",
  "map.no_tiles": "No background map: this demo network is at a stand-in location.",
  "site.limits": "Limits",
- "al.returns": "Came back {n} times since it started; last cleared {time}."
+ "al.returns": "Came back {n} times since it started; last cleared {time}.",
+ "lg.pipes": "Water mains (width shows pipe size)"
 }

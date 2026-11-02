@@ -153,7 +153,11 @@ class App:
                             "rain_sensor": rain[0] if rain else None,
                             "system": s["system_key"], "network_type": s["network_type"], "status": s["status"],
                             "criticality": s["criticality"], "worst": worst.get(s["id"]), "readings": key_vals})
-            return {"sites": out}
+            lq = "SELECT l.key, l.name, l.kind, l.geojson, y.key system FROM map_layers l JOIN systems y ON y.id=l.system_id WHERE y.status!='retired'"
+            layers = [{"key": r["key"], "name": r["name"], "kind": r["kind"], "system": r["system"],
+                       "geojson": json.loads(r["geojson"])}
+                      for r in c.execute(lq + (" AND y.key=?" if system else ""), ([system] if system else []))]
+            return {"sites": out, "layers": layers}
 
     @staticmethod
     def _latest(c, sid):
