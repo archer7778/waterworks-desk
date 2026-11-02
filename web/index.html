@@ -46,6 +46,8 @@ h3{font-size:14px;margin:14px 0 6px;font-weight:650;color:var(--muted);text-tran
 .banner{display:flex;gap:4px 8px;align-items:baseline;flex-wrap:wrap;padding:5px 16px;font-size:13px}
 .banner .x{all:unset;cursor:pointer;margin-left:auto;padding:0 6px;font-size:17px;line-height:1;color:var(--muted)}.banner .x:focus-visible{outline:2px solid var(--accent)}
 #sysPick{max-width:190px}
+.banner.warn{background:var(--warn-bg);color:var(--ink);font-weight:600;border-bottom-color:var(--warn)}
+.panel-error{color:var(--muted);font-size:13px;padding:8px 0}
 header.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
 header.top .brand{display:flex;align-items:center;gap:10px}
 header.top .brand svg{flex:none}
@@ -182,6 +184,7 @@ details.sys>summary{cursor:pointer;color:var(--muted);font-size:13px;margin:4px 
 </style>
 </head>
 <body>
+<div id="stale" class="banner warn" role="alert" hidden></div>
 <div id="notice" class="banner"><span id="demo" hidden></span><span data-t="safety"></span><button id="noticeX" class="x" type="button" aria-label="Close">×</button></div>
 <header class="top">
   <div class="brand">
@@ -589,10 +592,15 @@ async function showOverview(){
   let tm;$("#mapQ").oninput=e=>{st.q=e.target.value;flSave();clearTimeout(tm);tm=setTimeout(()=>{drawMap();drawStrip()},180)};
   $("#mapShow").onchange=e=>{st.show=e.target.value;flSave();drawMap();drawStrip()};$("#mapType").onchange=e=>{st.type=e.target.value;flSave();drawMap()};
   $("#mapRain").onchange=e=>{st.rain=e.target.checked;flSave();drawMarkers();drawRainLayer();drawLegend();drawStrip()};
-  drawStrip();drawMap();drawLegend();await refreshAlerts();drawStrip();drawTimeline();
+  part("strip",drawStrip);part("map",()=>{drawMap();drawLegend()});await partA("alerts",refreshAlerts);part("strip",drawStrip);part("timeline",drawTimeline);
   if(PEEK){const s=MAPDATA.sites.find(x=>x.key===PEEK);if(s)peek(s);else closePeek()}
 }
-async function refreshOverview(){await loadSites();await loadPulse();SHOWN=mapShown();drawMarkers();drawRainLayer();await refreshAlerts();drawStrip();drawTimeline()}
+async function refreshOverview(){await loadSites();await loadPulse();part("map",()=>{SHOWN=mapShown();drawMarkers();drawRainLayer()});await partA("alerts",refreshAlerts);part("strip",drawStrip);part("timeline",drawTimeline)}
+/* A part of the Overview that fails says so in its own place; the rest of the page carries on. */
+const PART_EL={strip:"#strip",map:"#mapCount",alerts:"#alerts",timeline:"#timeline"};
+function partFail(name,e){console.error(name,e);const el=$(PART_EL[name]);if(el)el.innerHTML=`<div class="panel-error">${esc(t("m.part_error"))}</div>`}
+function part(name,fn){try{fn()}catch(e){partFail(name,e)}}
+async function partA(name,fn){try{await fn()}catch(e){partFail(name,e)}}
 
 /* ---------- site ---------- */
 function schematic(s){
@@ -1031,7 +1039,11 @@ function setupFind(){
 const hashSite=()=>{const h=decodeURIComponent(location.hash.slice(1));return h.startsWith("site-")?h.slice(5):h.startsWith("site=")?h.slice(5):null};
 function setView(v){VIEW=v;if(v!=="site"&&location.hash)try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}for(const s of ["overview","site","alerts","sites","spills","setup","log"])$("#v-"+s).hidden=s!==v;$$("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.view===(v==="site"?PREV:v)?"page":"false"));
   if(v==="overview"&&map)setTimeout(()=>map.invalidateSize(),50)}
-async function render(){if(VIEW==="overview")await showOverview();else if(VIEW==="site")await openSite(SITE,true);else if(VIEW==="alerts")await showAlerts();else if(VIEW==="sites")await showSites();else if(VIEW==="spills")await showSpills();else if(VIEW==="setup")await showSetup();else await showLog()}
+async function render(){const old=$("#viewErr");if(old)old.remove();
+  try{await renderView()}catch(e){console.error(e);const s=$("#v-"+VIEW);if(!s)return;
+    s.insertAdjacentHTML("afterbegin",`<div class="panel" id="viewErr" role="alert" style="margin-bottom:14px"><div class="row"><span>${esc(t("m.error",{e:e.message||e}))}</span><span class="grow"></span><button class="btn small" id="retry">${esc(t("m.retry"))}</button></div></div>`);
+    $("#retry").onclick=()=>render()}}
+async function renderView(){if(VIEW==="overview")await showOverview();else if(VIEW==="site")await openSite(SITE,true);else if(VIEW==="alerts")await showAlerts();else if(VIEW==="sites")await showSites();else if(VIEW==="spills")await showSpills();else if(VIEW==="setup")await showSetup();else await showLog()}
 async function reloadTree(){TREE=await api("/api/tree");const sel=$("#sysPick");
   sel.innerHTML=(TREE.regions.length>1?"":`<option value="">${esc(t("sys.all"))}</option>`)+TREE.regions.map(r=>`<optgroup label="${esc(r.name)}">${r.systems.length>1||TREE.regions.length>1?`<option value="region:${esc(r.key)}">${esc(t("sys.all_in",{name:r.name}))}</option>`:""}${r.systems.map(s=>`<option value="${esc(s.key)}">${esc(s.name)} · ${esc(t("nt."+s.network_type))}</option>`).join("")}</optgroup>`).join("");
   if(!SYS&&TREE.regions.length>1){const d=CONF.default_system;SYS=d&&[...sel.options].some(o=>o.value===d)?d:"region:"+TREE.regions[0].key}
@@ -1047,6 +1059,7 @@ async function start(){
     if(ST){$("#demo").hidden=false;$("#demo").textContent=t("demo.banner",{time:fmtT(CONF.clock_ms,true)})}
     $("#clock").hidden=!!ST&&!$("#notice").hidden};
   if(lsGet("wwd.notice",0)>Date.now())$("#notice").hidden=true;
+  if(ST&&ST.built){const age=Date.now()/1000-ST.built;if(age>6*3600){$("#stale").hidden=false;$("#stale").textContent=t("demo.stale",{ago:dur(age)})}}
   $("#noticeX").onclick=()=>{$("#notice").hidden=true;lsSet("wwd.notice",Date.now()+7*864e5);banners()};banners();
   $("#foot").innerHTML=`<div>${esc(t("safety"))}</div>Waterworks Desk ${esc(CONF.version)}${(CONF.credits||[]).length?" · "+esc(t("credits"))+": "+CONF.credits.map(c=>c.url?`<a href="${esc(c.url)}" rel="noopener">${esc(c.text)}</a>`:esc(c.text)).join(" · "):""}`;
   $$("nav.tabs button").forEach(b=>b.onclick=()=>{setView(b.dataset.view);render()});

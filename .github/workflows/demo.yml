@@ -53,18 +53,23 @@ jobs:
           restore-keys: demo-db-
 
       - name: Build the demo from London's live feeds
+        id: build
         run: python -u tools/build_demo.py --out site --keep
 
       - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+        if: always() && steps.build.outcome == 'success'
         with:
           path: demo
           key: demo-db-${{ github.run_id }}-${{ github.run_attempt }}
 
+      # Published only when the data passed the build's checks; otherwise the last good demo stays.
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3
+        if: steps.build.outputs.publish == 'true'
         with:
           path: site
 
       - id: deploy
+        if: steps.build.outputs.publish == 'true'
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4
 
       # GitHub switches off scheduled workflows in a public repository after 60 days without a

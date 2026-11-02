@@ -467,5 +467,8 @@
  "tl.rain_max": "max {mm} mm/h",
  "tl.r_rain": "rain {mm} mm/h",
  "tl.r_spill": "{n} spilling",
- "tl.r_off": "{n} offline"
+ "tl.r_off": "{n} offline",
+ "m.retry": "Try again",
+ "m.part_error": "This part couldn't be drawn. The rest of the page is unaffected; reload to try again.",
+ "demo.stale": "This snapshot was last refreshed {ago} ago. The automatic refresh every three hours seems to have stopped, so what you see may be out of date."
 }

@@ -67,7 +67,7 @@ def export(cfg, out, log=print):
         _w(d / "3600.json", app.readings(key, end - 95 * 86400, end, 3600))
         _w(d / "86400.json", app.readings(key, 0, end, 86400))
     page = (WEB / "index.html").read_text(encoding="utf-8")
-    inject = f'<script>window.WWD_STATIC={{"base":"api/","snapshot":{clock}}};</script>\n'
+    inject = f'<script>window.WWD_STATIC={{"base":"api/","snapshot":{clock},"built":{int(time.time())}}};</script>\n'
     page = page.replace('<script src="vendor/leaflet/leaflet.js"></script>', inject + '<script src="vendor/leaflet/leaflet.js"></script>', 1)
     (out / "index.html").write_text(page, encoding="utf-8")
     for sub in ("vendor", "i18n"):

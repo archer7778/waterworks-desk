@@ -467,5 +467,8 @@
  "tl.rain_max": "tối đa {mm} mm/giờ",
  "tl.r_rain": "mưa {mm} mm/giờ",
  "tl.r_spill": "{n} đang xả",
- "tl.r_off": "{n} mất kết nối"
+ "tl.r_off": "{n} mất kết nối",
+ "m.retry": "Thử lại",
+ "m.part_error": "Không vẽ được phần này. Phần còn lại của trang không bị ảnh hưởng; tải lại trang để thử lại.",
+ "demo.stale": "Ảnh chụp này được làm mới lần cuối {ago} trước. Việc tự động làm mới mỗi ba giờ có vẻ đã dừng, nên dữ liệu có thể đã cũ."
 }

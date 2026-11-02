@@ -144,6 +144,21 @@ without a commit; the workflow re-enables itself on each run to stop that. If it
 stop, GitHub emails the owner, and *Actions → Demo → Enable workflow* turns it back on.
 To fork it: Settings → Pages → Source: GitHub Actions, then run the Demo workflow once.
 
+**What keeps the demo trustworthy when something goes wrong:**
+
+- A feed that can't be reached when the demo rebuilds falls back to the last setup that
+  worked; the other feed's readings still come in.
+- Before anything is published the data is checked: at least half the overflow monitors must
+  be reporting and the newest overflow reading must be under a day old. If not, nothing is
+  published and the last good demo stays up (the Actions run says why).
+- The saved history is checked each run; if it's damaged, the demo starts a fresh one rather
+  than failing from then on.
+- Visitors see a warning if the snapshot hasn't been refreshed for six hours, and the
+  *Data feeds* number shows any feed that's behind.
+- In the page, one part that fails (the alerts, the timeline) says so in its place and the
+  rest carries on; a page that fails to load offers *Try again*.
+- `tests/test_demo_build.py` covers each of these.
+
 A region with no real location (a test network) can set `basemap = 0` to be drawn without a
 street map; systems can carry map layers such as pipes and sewers (GeoJSON).
 
