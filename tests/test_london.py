@@ -91,3 +91,28 @@ def test_each_system_judged_at_its_own_clock():
     assert clocks[old_id] == 1_546_300_800 + 600
     alerts.evaluate(conn, cfg)
     assert not [a for a in alerts.active(conn, now_ms=10**13) if a["rule"] == "silent"]   # not silent at its own clock
+
+
+def test_spill_alert_ends_when_the_monitor_said_it_stopped():
+    cfg, conn, over, res = setup()
+    cfg.sources = [s for s in cfg.sources if s["key"] == "thames"]
+    ingest.run(cfg, conn, log=lambda m: None)
+    spill = over["features"][1]["attributes"]
+    start, stop = spill["LatestEventStart"] // 1000, spill["LatestEventEnd"] // 1000
+    alerts.evaluate(conn, None, start + 60)
+    alerts.evaluate(conn, None, stop + 3 * 3600)          # we only look again three hours after it stopped
+    a = [x for x in alerts.active(conn, now_ms=(stop + 4 * 3600) * 1000, include_ended_hours=24) if x["rule"] == "spilling"][0]
+    assert a["end_ms"] == stop * 1000
+
+
+def test_on_off_readings_carry_in_their_state():
+    from waterworks_desk import server
+    cfg, conn, over, res = setup()
+    cfg.sources = [s for s in cfg.sources if s["key"] == "thames"]
+    ingest.run(cfg, conn, log=lambda m: None)
+    spill = over["features"][1]["attributes"]
+    app = server.App(cfg)
+    key = f"twl-{spill['Id'].lower()}-edm"
+    mid = (spill["LatestEventStart"] + spill["LatestEventEnd"]) // 2000
+    r = app.readings(key, mid, mid + 60, 3600)             # a window inside the spill, asking for averages
+    assert r["res"] == "raw" and r["prev"][1] == 1.0       # raw anyway, and it knows it was spilling

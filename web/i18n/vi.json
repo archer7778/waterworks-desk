@@ -310,5 +310,8 @@
  "state.off": "Tắt",
  "state.spilling": "Đang xả tràn",
  "state.not_spilling": "Không xả tràn",
- "state.offline": "Mất kết nối"
+ "state.offline": "Mất kết nối",
+ "you.name_hint": "Mọi thay đổi đều được ký bằng tên của bạn, để nhật ký kiểm tra ghi lại ai đã thực hiện.",
+ "ch.spills": "{n} lần xả tràn trong khoảng này, tổng cộng {dur}.",
+ "ch.periods_on": "Bật {n} lần trong khoảng này, tổng cộng {dur}."
 }

@@ -51,8 +51,15 @@ def export(cfg, out, log=print):
         _w(api / "setup" / "export.json", model.export_bundle(c))
     _w(api / "setup" / "pending.json", [])
     _w(api / "setup" / "unmapped.json", {})
+    with app.ro() as c:
+        states = {r[0] for r in c.execute("SELECT key FROM sensors WHERE quantity='state'")}
     for key, system in sensors:
         d, end = api / "sensors" / key, clocks.get(system, clock * 1000) // 1000
+        if key in states:   # on/off readings are few: every file holds all of them
+            r = app.readings(key, 0, end, "raw")
+            for f in ("raw", "3600", "86400"):
+                _w(d / f"{f}.json", r)
+            continue
         _w(d / "raw.json", app.readings(key, end - 8 * 86400, end, "raw"))
         _w(d / "3600.json", app.readings(key, end - 95 * 86400, end, 3600))
         _w(d / "86400.json", app.readings(key, 0, end, 86400))

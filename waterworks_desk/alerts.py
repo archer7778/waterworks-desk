@@ -347,7 +347,11 @@ def evaluate(conn, cfg=None, now=None, log=None, system=None):
     for ident, cur in have.items():
         if ident not in want:
             end = (nows or {}).get(cur["system_id"], now)
-            if cur["sensor_id"] is not None and cur["rule"].startswith(("limit", "near", "over", "tank")):
+            if cur["rule"] == "spilling" and cur["sensor_id"] is not None:
+                r = conn.execute("SELECT MIN(ts) FROM readings WHERE sensor_id=? AND ts>=? AND ts<=? AND value<0.5",
+                                 (cur["sensor_id"], cur["start_ms"] // 1000, end)).fetchone()[0]
+                end = r or end
+            elif cur["sensor_id"] is not None and cur["rule"].startswith(("limit", "near", "over", "tank")):
                 r = conn.execute("SELECT MIN(ts) FROM (SELECT ts FROM readings WHERE sensor_id=? AND ts<=? ORDER BY ts DESC LIMIT ?)",
                                  (cur["sensor_id"], now, PERSIST)).fetchone()[0]
                 end = r or now

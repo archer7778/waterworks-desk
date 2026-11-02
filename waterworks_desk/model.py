@@ -279,8 +279,13 @@ def _clean(conn, kind, data, existing, known_sources):
                 g = json.loads(g) if isinstance(g, str) else g
                 if not isinstance(g, dict) or g.get("type") not in ("FeatureCollection", "Feature"):
                     raise ValueError
-                for f in (g.get("features") or [g]):
-                    for x, y, *_ in _coords(f.get("geometry") or {}):
+                feats = g.get("features") if g.get("type") == "FeatureCollection" else [g]
+                if not isinstance(feats, list) or not feats:
+                    raise ValueError
+                for f in feats:
+                    if not isinstance(f, dict):
+                        raise ValueError
+                    for x, y, *_ in _coords(f.get("geometry")):
                         if not (-180 <= x <= 180 and -90 <= y <= 90):
                             raise SetupError(["the map layer has a point outside the world (is it in lat/lon, WGS84?)"])
                 cols["geojson"] = json.dumps(g, separators=(",", ":"))
@@ -367,15 +372,21 @@ def _clean(conn, kind, data, existing, known_sources):
 
 
 def _coords(geom):
-    """Every [lon, lat] in a GeoJSON geometry."""
-    c = geom.get("coordinates")
+    """Every [lon, lat] in a GeoJSON geometry; raises ValueError on anything that isn't one."""
+    if not isinstance(geom, dict) or geom.get("type") not in (
+            "Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon"):
+        raise ValueError("unknown geometry")
     def walk(v):
-        if isinstance(v, (list, tuple)) and v and isinstance(v[0], (int, float)):
+        if isinstance(v, (list, tuple)) and v and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in v):
+            if len(v) < 2:
+                raise ValueError("a position needs longitude and latitude")
             yield v
-        elif isinstance(v, (list, tuple)):
+        elif isinstance(v, (list, tuple)) and v:
             for x in v:
                 yield from walk(x)
-    return list(walk(c)) if c is not None else []
+        else:
+            raise ValueError("not a coordinate")
+    return list(walk(geom.get("coordinates")))
 
 
 def save(conn, kind, data, actor, known_sources=None, commit=True, audit=True):
@@ -586,7 +597,14 @@ def import_bundle(conn, bundle, actor, known_sources=None, make_live=False, sour
     plural = {k: k + "s" for k in BUNDLE_ORDER}
     errors, warnings, counts = [], [], {}
     for kind in BUNDLE_ORDER:
-        for item in bundle.get(plural[kind], []) or []:
+        items = bundle.get(plural[kind], []) or []
+        if not isinstance(items, list):
+            errors.append(f"\"{plural[kind]}\" should be a list of items")
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                errors.append(f"every item under \"{plural[kind]}\" should be an object with a key, not {json.dumps(item)[:40]}")
+                continue
             try:
                 res = save(conn, kind, item, actor, known_sources, commit=False, audit=False)
                 counts[kind] = counts.get(kind, 0) + 1

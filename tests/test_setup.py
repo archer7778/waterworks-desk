@@ -146,3 +146,16 @@ def test_bundle_round_trip_and_all_or_nothing():
         model.import_bundle(conn2, b2, ACTOR, {"exports"})
     assert "site bad: latitude must be between" in e.value.errors[0]
     assert conn2.execute("SELECT 1 FROM sites WHERE key='ok1'").fetchone() is None
+
+
+def test_malformed_setup_files_are_refused_in_words():
+    tmp, cfg, conn = make_env(CSV_SOURCE)
+    basic_network(conn)
+    for bad, words in (({"sites": "notalist"}, '"sites" should be a list'), ({"sites": [1]}, "should be an object"),
+                       ({"layers": [{"key": "l", "system": "dw", "name": "L", "geojson": {"type": "FeatureCollection", "features": [
+                           {"type": "Feature", "geometry": {"type": "Point", "coordinates": "x"}}]}}]}, "must be GeoJSON"),
+                       ({"layers": [{"key": "l", "system": "dw", "name": "L", "geojson": {"type": "FeatureCollection", "features": [
+                           {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[200, 51], [0, 51]]}}]}}]}, "outside the world")):
+        with pytest.raises(model.SetupError) as e:
+            model.import_bundle(conn, bad, ACTOR, {"exports"})
+        assert words in " ".join(e.value.errors), e.value.errors

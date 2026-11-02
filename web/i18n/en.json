@@ -310,5 +310,8 @@
  "state.off": "Off",
  "state.spilling": "Spilling",
  "state.not_spilling": "Not spilling",
- "state.offline": "Offline"
+ "state.offline": "Offline",
+ "you.name_hint": "Every change is signed with your name, so the audit trail says who made it.",
+ "ch.spills": "{n} spill(s) in this period, {dur} in total.",
+ "ch.periods_on": "On {n} time(s) in this period, {dur} in total."
 }

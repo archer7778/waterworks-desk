@@ -265,10 +265,16 @@ class App:
                     (r for r in dbm.ROLLUP_RES if r > every and span / r <= MAX_POINTS), 86400)
             base = {"sensor": key, "unit": x["unit"], "quantity": x["quantity"],
                     "display": display(x["quantity"], x["unit"], x["display_unit"]), "from": t_from, "to": t_to}
+            if x["quantity"] == "state":
+                res = "raw"   # on/off: averages mean nothing; the readings are few (one per change)
             if res == "raw":
                 rows = c.execute("SELECT ts, value, quality FROM readings WHERE sensor_id=? AND ts BETWEEN ? AND ? "
                                  "ORDER BY ts LIMIT 200000", (x["id"], t_from, t_to)).fetchall()
-                return {**base, "res": "raw", "t": [r[0] for r in rows], "v": [r[1] for r in rows], "q": [r[2] for r in rows]}
+                out = {**base, "res": "raw", "t": [r[0] for r in rows], "v": [r[1] for r in rows], "q": [r[2] for r in rows]}
+                prev = c.execute("SELECT ts, value, quality FROM readings WHERE sensor_id=? AND ts<? ORDER BY ts DESC LIMIT 1",
+                                 (x["id"], t_from)).fetchone()
+                out["prev"] = list(prev) if prev else None   # the state it was already in when the window opened
+                return out
             res = int(res)
             if res not in dbm.ROLLUP_RES:
                 raise ValueError(f"res must be auto, raw or one of {dbm.ROLLUP_RES}")
@@ -383,6 +389,20 @@ def make_handler(app):
             if not isinstance(body, dict):
                 raise ValueError("expected a JSON object")
             return body
+
+        def handle_one_request(self):
+            """Never drop a connection on an unexpected error: answer 500 and log it."""
+            try:
+                super().handle_one_request()
+            except (ConnectionError, TimeoutError):
+                raise
+            except Exception:
+                import traceback
+                traceback.print_exc()
+                try:
+                    self._json({"error": "Something went wrong on the server; it has been logged."}, 500)
+                except Exception:
+                    pass
 
         def do_GET(self):
             u = urlparse(self.path)
