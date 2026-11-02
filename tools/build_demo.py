@@ -25,13 +25,18 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
+import london_setup  # noqa: E402
 import ltown_setup  # noqa: E402
 
 from waterworks_desk import alerts, export_static, ingest, model  # noqa: E402
+from waterworks_desk.sources import openmeteo, stream_edm  # noqa: E402
 from waterworks_desk import db as dbm  # noqa: E402
 from waterworks_desk.config import Config  # noqa: E402
 
 ACTOR = "Demo build"
+THAMES = ("https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/"
+          "Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0")
+EA_STATIONS = "https://environment.data.gov.uk/flood-monitoring/id/stations?parameter=rainfall&lat=51.5&long=-0.12&dist=20"
 ORIGIN = (35.0, 33.0)
 
 
@@ -42,8 +47,15 @@ def main(argv=None):
     ap.add_argument("--work", default="demo", help="working folder for the demo database")
     ap.add_argument("--no-weather", action="store_true", help="skip Open-Meteo (no network)")
     ap.add_argument("--step", type=int, default=3600, help="seconds between alert replay steps")
+    ap.add_argument("--london-overflows", default=THAMES, help="Thames overflow layer URL, or a saved query (JSON file)")
+    ap.add_argument("--london-rain", default=EA_STATIONS, help="EA rainfall station list URL, or a saved list (JSON file)")
+    ap.add_argument("--offline", action="store_true", help="no network: no weather and no live rain readings")
+    ap.add_argument("--no-london", action="store_true")
     a = ap.parse_args(argv)
     t0 = time.time()
+    if a.offline:
+        a.no_weather = True
+    london_live = not str(a.london_overflows).endswith(".json")
     data, work = Path(a.data).resolve(), Path(a.work).resolve()
     if work.exists():
         shutil.rmtree(work)
@@ -67,10 +79,12 @@ raw_days = 0
 minute_days = 0
 
 [console]
-title = "Waterworks Desk · L-Town demo"
+title = "Waterworks Desk · demo"
+default_system = "{'' if a.no_london else 'region:london'}"
 
 [map]
-tile_url = ""        # L-Town is at a stand-in location: no real streets under it
+tile_url = "https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png"   # L-Town's region turns it off: no real location
+attribution = "© OpenStreetMap contributors"
 
 [alerts]
 clock = "data_end"
@@ -78,6 +92,15 @@ clock = "data_end"
 [[credits]]
 text = "BattLeDIM L-Town, Vrachimis et al. 2020, CC BY 4.0"
 url = "https://doi.org/10.5281/zenodo.4017659"
+{'' if a.no_london else '''
+[[credits]]
+text = "Storm overflows: Thames Water via Stream, CC BY 4.0"
+url = "https://portal-streamwaterdata.hub.arcgis.com/datasets/thameswater::thames-water-storm-overflow-activity"
+
+[[credits]]
+text = "Rainfall: Environment Agency real-time data API (Beta), Open Government Licence v3"
+url = "https://environment.data.gov.uk/flood-monitoring/doc/reference"
+'''}
 {'' if a.no_weather else '''
 [[credits]]
 text = "Weather data by Open-Meteo.com, CC BY 4.0 (at the stand-in location)"
@@ -91,6 +114,18 @@ pattern = "2018_SCADA_[FLP]*.csv"
 timezone = "UTC"
 settle_seconds = 0
 {weather}
+{'' if a.no_london else f'''
+[[sources]]
+key = "thames"
+type = "stream_edm"
+{"url" if london_live else "path"} = "{a.london_overflows if london_live else Path(a.london_overflows).resolve()}"
+min_minutes = 0
+'''}
+{'' if a.no_london else '''
+[[sources]]
+key = "ea"
+type = "ea_rain"
+'''}
 """)
     cfg = Config(work / "config.toml")
     conn = dbm.open_db(cfg)
@@ -106,6 +141,9 @@ settle_seconds = 0
     model.import_bundle(conn, bundle, ACTOR, known, source_name="tools/ltown_setup.py")
     print("1/4 Set up L-Town:", len(bundle["sites"]), "sites,", len(bundle["sensors"]), "sensors")
 
+    ltown_only = [s for s in cfg.sources if s["key"] in ("ltown", "weather")]
+    london_sources = [s for s in cfg.sources if s["key"] in (("thames",) if a.offline else ("thames", "ea"))]
+    cfg.sources = ltown_only
     ingest.run(cfg, conn, log=lambda m: print("   ", m))
     for x in conn.execute("SELECT * FROM sensors WHERE source='ltown'").fetchall():
         lo, hi = conn.execute("SELECT MIN(value), MAX(value) FROM readings WHERE sensor_id=?", (x["id"],)).fetchone()
@@ -135,10 +173,26 @@ settle_seconds = 0
     conn.commit()
     start = conn.execute("SELECT MIN(ts) FROM readings WHERE ts>=?", (1546300800,)).fetchone()[0]
     end = conn.execute("SELECT MAX(ts) FROM readings").fetchone()[0]
-    alerts.replay(conn, start, end, a.step, log=lambda m: print("   ", m))
-    alerts.evaluate(conn, cfg)
+    alerts.replay(conn, start, end, a.step, log=lambda m: print("   ", m), system="ltown-dw")
     n = dict(conn.execute("SELECT severity, COUNT(*) FROM alerts GROUP BY 1").fetchall())
     print(f"3/4 Put {res['live']} items live, read 2019 and replayed it: {n}")
+
+    if not a.no_london:
+        load = lambda src: openmeteo.get_json(src) if str(src).startswith("http") else json.load(open(src, encoding="utf-8"))
+        over = {"features": stream_edm.fetch(a.london_overflows)} if london_live else load(a.london_overflows)
+        lb = london_setup.build(over, load(a.london_rain))
+        model.import_bundle(conn, lb, ACTOR, known, make_live=True, source_name="tools/london_setup.py")
+        cfg.sources = london_sources
+        ingest.run(cfg, conn, force=True, log=lambda m: print("   ", m))
+        conn.execute("DELETE FROM alerts WHERE system_id IN (SELECT id FROM systems WHERE region_id=(SELECT id FROM regions WHERE key='london'))")
+        conn.commit()
+        lend = conn.execute("SELECT MAX(r.ts) FROM readings r JOIN sensors x ON x.id=r.sensor_id WHERE x.source='thames'").fetchone()[0]
+        for sk in ("thames-overflows", "london-rain"):
+            alerts.replay(conn, lend - 7 * 86400, lend, 900, system=sk)
+        cfg.sources = ltown_only + london_sources
+        n = dict(conn.execute("SELECT rule, COUNT(*) FROM alerts a JOIN systems y ON y.id=a.system_id WHERE y.key='thames-overflows' GROUP BY 1").fetchall())
+        print(f"   London: {len(lb['sites'])} sites ({'live feed' if london_live else 'saved snapshot'}); last 7 days: {n}")
+    alerts.evaluate(conn, cfg)
 
     export_static.export(cfg, a.out, log=lambda m: print("4/4", m))
     print(f"Done in {time.time() - t0:.0f}s.")

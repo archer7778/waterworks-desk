@@ -1,0 +1,62 @@
+{
+ "_source": "Thames Water storm overflow activity via Stream, CC BY 4.0 (three monitors, 2 Nov 2026)",
+ "features": [
+  {
+   "attributes": {
+    "OBJECTID": 146915,
+    "Id": "TWL00474",
+    "Company": "Thames Water",
+    "Status": -1,
+    "StatusStart": 1778216400000,
+    "LatestEventStart": null,
+    "LatestEventEnd": null,
+    "Longitude": -0.3088837995871436,
+    "Latitude": 51.587908661651916,
+    "ReceivingWaterCourse": "Wealdstone Brook",
+    "LastUpdated": 1793604236292
+   },
+   "geometry": {
+    "x": -0.3088837995871436,
+    "y": 51.587908661651916
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 146895,
+    "Id": "TWL00340",
+    "Company": "Thames Water",
+    "Status": 0,
+    "StatusStart": 1769165100000,
+    "LatestEventStart": 1769163300000,
+    "LatestEventEnd": 1769165100000,
+    "Longitude": -1.5862876482862838,
+    "Latitude": 51.44413925851902,
+    "ReceivingWaterCourse": "River Kennet",
+    "LastUpdated": 1793604236183
+   },
+   "geometry": {
+    "x": -1.5862876482862838,
+    "y": 51.44413925851902
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 146896,
+    "Id": "TWL00207",
+    "Company": "Thames Water",
+    "Status": 0,
+    "StatusStart": 1772236800000,
+    "LatestEventStart": 1772212500000,
+    "LatestEventEnd": 1772236800000,
+    "Longitude": -0.9232396202909846,
+    "Latitude": 51.76138332084657,
+    "ReceivingWaterCourse": "Scotsgrove Brook",
+    "LastUpdated": 1793604236291
+   },
+   "geometry": {
+    "x": -0.9232396202909846,
+    "y": 51.76138332084656
+   }
+  }
+ ]
+}

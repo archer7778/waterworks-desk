@@ -240,14 +240,18 @@ async function post(path,body){return api(path,{method:"POST",body:{...body,acto
 let toastT;function toast(m){const el=$("#toast");el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,5000)}
 
 /* ---------- time and numbers ---------- */
-function tzOf(){if(!TREE)return "UTC";for(const r of TREE.regions)for(const s of r.systems)if(!SYS||s.key===SYS)return r.timezone||"UTC";return (TREE.regions[0]||{}).timezone||"UTC"}
+function clockFor(){const c=CONF.clocks||{};if(!SYS||!TREE)return CONF.clock_all;
+  const keys=SYS.startsWith("region:")?(TREE.regions.find(r=>r.key===SYS.slice(7))||{systems:[]}).systems.map(s=>s.key):[SYS];
+  const v=keys.map(k=>c[k]).filter(Boolean);return v.length?Math.max(...v):CONF.clock_all}
+function tzOf(){if(TREE&&SYS.startsWith("region:")){const r=TREE.regions.find(r=>r.key===SYS.slice(7));if(r)return r.timezone||"UTC"}if(!TREE)return "UTC";for(const r of TREE.regions)for(const s of r.systems)if(!SYS||s.key===SYS)return r.timezone||"UTC";return (TREE.regions[0]||{}).timezone||"UTC"}
 function fmtT(ms,withDate){const d=new Date(ms),tz=tzOf(),now=CONF?CONF.clock_ms:Date.now();
   const same=new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit"});
   const showDate=withDate||same.format(d)!==same.format(new Date(now));
   return new Intl.DateTimeFormat(LANG==="vi"?"vi-VN":"en-GB",{timeZone:tz,hour:"2-digit",minute:"2-digit",...(showDate?{day:"numeric",month:"short",...(Math.abs(now-ms)>300*86400e3?{year:"numeric"}:{})}:{})}).format(d)}
 function fmtD(ms,monthOnly){return new Intl.DateTimeFormat(LANG==="vi"?"vi-VN":"en-GB",{timeZone:tzOf(),...(monthOnly?{month:"short",year:"2-digit"}:{day:"numeric",month:"short"})}).format(new Date(ms))}
 function dur(s){s=Math.max(0,Math.round(s));const m=Math.round(s/60);if(m<60)return t("m.min",{n:m});const h=Math.floor(m/60);if(h<48)return t("m.h",{h,m:m%60});return t("m.d",{d:Math.floor(h/24),h:h%24})}
-function show(x,v){if(v==null||!isFinite(v))return "—";const d=x.display||{factor:1,offset:0,unit:x.unit};const y=(v-d.offset)/d.factor;const a=Math.abs(y);
+function show(x,v,q){if(v==null||!isFinite(v))return "—";
+  if(x.quantity==="state"){if(q===2)return t("state.offline");const spill=/overflow|outfall/.test(x.site_type||"");return t(v>=0.5?(spill?"state.spilling":"state.on"):(spill?"state.not_spilling":"state.off"))}const d=x.display||{factor:1,offset:0,unit:x.unit};const y=(v-d.offset)/d.factor;const a=Math.abs(y);
   return (a>=1000?y.toFixed(0):a>=10?y.toFixed(1):y.toFixed(2))+" "+d.unit}
 const disp=(x,v)=>v==null?null:(v-(x.display||{offset:0}).offset)/((x.display||{factor:1}).factor);
 
@@ -313,13 +317,16 @@ function drawLegend(){const types=[...new Set((MAPDATA?MAPDATA.sites:[]).map(s=>
 function ensureMap(){
   if(map)return;
   map=L.map("map",{zoomControl:true,attributionControl:true});
-  if(CONF.map.tile_url){L.tileLayer(CONF.map.tile_url,{maxZoom:CONF.map.max_zoom||19,attribution:CONF.map.attribution||""}).addTo(map)}
-  else{$("#map").classList.add("blank");map._wwdNote=esc(t("map.no_tiles"));map.attributionControl.addAttribution(map._wwdNote)}
+  if(CONF.map.tile_url)map._tiles=L.tileLayer(CONF.map.tile_url,{maxZoom:CONF.map.max_zoom||19,attribution:CONF.map.attribution||""});
   L.control.scale({imperial:false}).addTo(map);
   lines=L.layerGroup().addTo(map);markers=L.layerGroup().addTo(map);
 }
 function drawMap(){
   ensureMap();markers.clearLayers();lines.clearLayers();const pts=[];
+  const streets=!!map._tiles&&MAPDATA.sites.length>0&&MAPDATA.sites.every(s=>s.basemap!==false);
+  if(streets&&!map.hasLayer(map._tiles))map._tiles.addTo(map);if(!streets&&map._tiles&&map.hasLayer(map._tiles))map.removeLayer(map._tiles);
+  $("#map").classList.toggle("blank",!streets);if(map._wwdNote){map.attributionControl.removeAttribution(map._wwdNote);map._wwdNote=null}
+  if(!streets&&MAPDATA.sites.length){map._wwdNote=esc(t(map._tiles?"map.stand_in":"map.no_tiles"));map.attributionControl.addAttribution(map._wwdNote)}
   const labelled=new Set(MAPDATA.sites.length<=80?MAPDATA.sites.filter(s=>s.criticality===1&&s.site_type!=="pressure_logger").map(s=>s.key):[]);
   for(const l of MAPDATA.layers||[]){L.geoJSON(l.geojson,{interactive:false,style:f=>{const d=(f.properties||{}).diameter_mm;
     return {className:l.kind==="boundary"?"wwd-boundary":"wwd-pipe",weight:d?Math.max(1,Math.min(5,d/80)):2}}}).addTo(lines)}
@@ -331,7 +338,7 @@ function drawMap(){
     if(labelled.has(s.key)){const lons=MAPDATA.sites.map(o=>o.lon),east=s.lon>Math.max(...lons)-(Math.max(...lons)-Math.min(...lons))*.2;
       const left=east||MAPDATA.sites.some(o=>o!==s&&labelled.has(o.key)&&o.lon>s.lon&&Math.hypot((o.lat-s.lat)*111e3,(o.lon-s.lon)*111e3*Math.cos(s.lat*Math.PI/180))<350);
       m.bindTooltip(esc(s.name),{permanent:true,direction:left?"left":"right",offset:[left?-10:10,0],className:"site-label"})}
-    else m.bindTooltip(`<strong>${esc(s.name)}</strong><br>${esc(t("st."+s.site_type))} · ${esc(draft?t("status.draft"):t(s.worst?"sev."+s.worst:"sev.ok"))}${reading?`<br>${esc(reading.name)}: ${esc(show(reading,reading.value))}`:""}`);
+    else m.bindTooltip(`<strong>${esc(s.name)}</strong><br>${esc(t("st."+s.site_type))} · ${esc(draft?t("status.draft"):t(s.worst?"sev."+s.worst:"sev.ok"))}${reading?`<br>${esc(reading.name)}: ${esc(show({...reading,site_type:s.site_type},reading.value,reading.quality))}`:""}`);
   }
   if(pts.length){const b=L.latLngBounds(pts);map.fitBounds(b.pad(0.08),{maxZoom:16})}
   else if(TREE.regions[0]&&TREE.regions[0].lat!=null)map.setView([TREE.regions[0].lat,TREE.regions[0].lon],12);
@@ -342,6 +349,7 @@ async function drawRain(){
   const g=MAPDATA.sites.find(s=>s.rain_sensor);if(!g){$("#rain24").textContent="";return}
   const to=Math.floor(CONF.clock_ms/1000);
   try{const r=await api(`/api/sensors/${encodeURIComponent(g.rain_sensor)}/readings?from=${to-86400}&to=${to}`);
+    if(!r.t.length){$("#rain24").textContent="";return}
     let sum=0;if(r.res==="raw")sum=r.v.reduce((a,b)=>a+b,0);else sum=r.v.reduce((a,b,i)=>a+b*(r.n?r.n[i]:1),0);
     $("#rain24").textContent=t("ov.rain24",{v:sum.toFixed(1),gauge:g.name})}catch(e){}
 }
@@ -350,7 +358,7 @@ async function drawRain(){
 async function refreshAlerts(){
   const sys=SYS?"system="+encodeURIComponent(SYS)+"&":"";
   const all=await api(`/api/alerts?${sys}ended_hours=24${$("#showShelved").checked?"&shelved=1":""}`);
-  let list=all;if(ST){list=all.filter(a=>!SYS||a.system===SYS||!a.system)}
+  let list=all;if(ST){list=all.filter(a=>!SYS||!a.system||(SYS.startsWith("region:")?a.region===SYS.slice(7):a.system===SYS))}
   ALERTS=list.filter(a=>a.end_ms==null&&($("#showShelved").checked||!(a.shelved_until_ms>Date.now())));
   RECENT=list.filter(a=>a.end_ms!=null&&a.end_ms>CONF.clock_ms-86400e3);
   const n=s=>ALERTS.filter(a=>a.severity===s).length;
@@ -360,7 +368,8 @@ async function refreshAlerts(){
 }
 async function showOverview(){
   MAPDATA=await api("/api/map"+(SYS&&!ST?"?system="+encodeURIComponent(SYS):""));
-  if(ST&&SYS)MAPDATA={sites:MAPDATA.sites.filter(s=>s.system===SYS),layers:(MAPDATA.layers||[]).filter(l=>l.system===SYS)};
+  const pick=x=>!SYS||(SYS.startsWith("region:")?x.region===SYS.slice(7):x.system===SYS);
+  if(ST&&SYS)MAPDATA={sites:MAPDATA.sites.filter(pick),layers:(MAPDATA.layers||[]).filter(pick)};
   drawMap();drawLegend();await refreshAlerts();drawRain();
   if(!MAPDATA.sites.length)$("#alerts").innerHTML=`<div class="empty">${esc(t("ov.no_sites"))}</div>`;
 }
@@ -412,7 +421,7 @@ async function openSite(key,keepChart){
    </div><div>
      <div class="panel"><h3 style="margin-top:0">${esc(t("site.sensors"))}</h3><table><thead><tr><th>${esc(t("f.name"))}</th><th>${esc(t("f.value"))}</th><th>${esc(t("site.limits"))}</th></tr></thead><tbody>
      ${s.sensors.map(x=>`<tr class="pick${CHART.sensor===x.key?" sel":""}" data-sensor="${esc(x.key)}" tabindex="0"><td>${esc(x.name)}<div class="small muted">${esc(t("q."+x.quantity))}${x.status!=="live"?" · "+esc(t("status.draft")):""}</div></td>
-        <td><span class="val mono">${x.latest?esc(show(x,x.latest.value)):"—"}</span><div class="small muted">${x.latest?esc(t("site.reading_at",{time:fmtT(x.latest.ts*1000)})):esc(t("site.no_reading"))}${x.latest&&x.latest.level_above_datum_m!=null&&s.datum?"<br>"+esc(t("site.above_datum",{v:x.latest.level_above_datum_m.toFixed(2)+" m",datum:s.datum})):""}</div></td>
+        <td><span class="val mono">${x.latest?esc(show({...x,site_type:s.site_type},x.latest.value,x.latest.quality)):"—"}</span><div class="small muted">${x.latest?esc(t("site.reading_at",{time:fmtT(x.latest.ts*1000)})):esc(t("site.no_reading"))}${x.latest&&x.latest.level_above_datum_m!=null&&s.datum?"<br>"+esc(t("site.above_datum",{v:x.latest.level_above_datum_m.toFixed(2)+" m",datum:s.datum})):""}</div></td>
         <td class="small">${limitText(x)}${ST?"":`<div><button class="btn small" data-edit="sensor:${esc(x.key)}">${esc(t("setup.edit"))}</button></div>`}</td></tr>`).join("")}</tbody></table></div>
      <div class="panel chart" style="margin-top:14px" id="chartBox"><div class="small muted">${esc(t("site.chart_hint"))}</div></div>
    </div></div>`;
@@ -609,22 +618,23 @@ function setView(v){VIEW=v;if(v!=="site"&&location.hash)try{history.replaceState
   if(v==="overview"&&map)setTimeout(()=>map.invalidateSize(),50)}
 async function render(){if(VIEW==="overview")await showOverview();else if(VIEW==="site")await openSite(SITE,true);else if(VIEW==="setup")await showSetup();else await showLog()}
 async function reloadTree(){TREE=await api("/api/tree");const sel=$("#sysPick");
-  sel.innerHTML=`<option value="">${esc(t("sys.all"))}</option>`+TREE.regions.flatMap(r=>r.systems.map(s=>`<option value="${esc(s.key)}">${esc(s.name)} · ${esc(t("nt."+s.network_type))}</option>`)).join("");
+  sel.innerHTML=(TREE.regions.length>1?"":`<option value="">${esc(t("sys.all"))}</option>`)+TREE.regions.map(r=>`<optgroup label="${esc(r.name)}">${r.systems.length>1||TREE.regions.length>1?`<option value="region:${esc(r.key)}">${esc(t("sys.all_in",{name:r.name}))}</option>`:""}${r.systems.map(s=>`<option value="${esc(s.key)}">${esc(s.name)} · ${esc(t("nt."+s.network_type))}</option>`).join("")}</optgroup>`).join("");
+  if(!SYS&&TREE.regions.length>1){const d=CONF.default_system;SYS=d&&[...sel.options].some(o=>o.value===d)?d:"region:"+TREE.regions[0].key}
   if(![...sel.options].some(o=>o.value===SYS))SYS="";sel.value=SYS}
 function savePrefs(){lsSet("wwd.prefs",{lang:LANG,sys:SYS,name:$("#you").value})}
 async function start(){
-  CONF=await api("/api/config");if(ST)Object.assign(CONF,{static:true});
+  CONF=await api("/api/config");if(ST)Object.assign(CONF,{static:true});CONF.clock_all=CONF.clock_ms;
   await loadLang(prefs.lang||CONF.language||"en");
   $("#lang").value=LANG;$("#title").textContent=CONF.title;document.title=CONF.title+(ST?" · demo":"");
   $("#you").value=prefs.name||"";$("#pass").hidden=!CONF.write_protected||!!ST;if(ST){$("#you").hidden=true}
-  applyWords();await reloadTree();
+  applyWords();await reloadTree();CONF.clock_ms=clockFor();
   const banners=()=>{if(ST||CONF.clock_mode!=="now"){$("#clock").textContent=t("clock.judged",{time:fmtT(CONF.clock_ms,true)})}
     if(ST){$("#demo").hidden=false;$("#demo").textContent=t("demo.banner",{time:fmtT(CONF.clock_ms,true)})}};banners();
   $("#foot").innerHTML=`Waterworks Desk ${esc(CONF.version)}${(CONF.credits||[]).length?" · "+esc(t("credits"))+": "+CONF.credits.map(c=>c.url?`<a href="${esc(c.url)}" rel="noopener">${esc(c.text)}</a>`:esc(c.text)).join(" · "):""}`;
   $$("nav.tabs button").forEach(b=>b.onclick=()=>{setView(b.dataset.view);render()});
-  $("#sysPick").onchange=e=>{SYS=e.target.value;savePrefs();if(VIEW==="site")setView("overview");render()};
+  $("#sysPick").onchange=e=>{SYS=e.target.value;savePrefs();CONF.clock_ms=clockFor();banners();if(VIEW==="site")setView("overview");render()};
   $("#lang").onchange=async e=>{await loadLang(e.target.value);savePrefs();applyWords();banners();await reloadTree();
-    if(map&&!CONF.map.tile_url){map.attributionControl.removeAttribution(map._wwdNote);map._wwdNote=esc(t("map.no_tiles"));map.attributionControl.addAttribution(map._wwdNote)}render()};
+    render()};
   $("#you").onchange=savePrefs;$("#showShelved").onchange=refreshAlerts;
   const hs=hashSite();if(hs){await openSite(hs)}else{setView("overview");await render()}
   window.addEventListener("hashchange",()=>{const k=hashSite();if(k&&k!==SITE)openSite(k)});

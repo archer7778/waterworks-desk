@@ -23,7 +23,7 @@ DEFAULTS = {
     "map": {"tile_url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
             "attribution": "© OpenStreetMap contributors", "max_zoom": 19},
 }
-SOURCE_TYPES = {"csv", "open_meteo"}
+SOURCE_TYPES = {"csv", "open_meteo", "stream_edm", "ea_rain"}
 KEY_RE = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,62}$")
 
 

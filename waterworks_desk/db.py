@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS regions (
   language TEXT NOT NULL DEFAULT 'en',
   lat REAL, lon REAL,                       -- centre, for the map and the weather source
   radius_km REAL,                           -- sites must fall within this distance of the centre
+  basemap INTEGER NOT NULL DEFAULT 1,       -- 0: draw no street map (a test network at a stand-in location)
   note TEXT NOT NULL DEFAULT '',
   created_ms INTEGER NOT NULL
 );

@@ -92,12 +92,19 @@ class App:
         with self.ro() as c:
             return alerts.clock(self.cfg, c) * 1000
 
+    def clocks(self):
+        """{system key: ms} the time each system is judged at (differs only in a historical demo)."""
+        with self.ro() as c:
+            keys = {r[0]: r[1] for r in c.execute("SELECT id, key FROM systems")}
+            return {keys[i]: t * 1000 for i, t in alerts.system_clocks(self.cfg, c).items() if i in keys}
+
     # ---------- reads ----------
     def config(self):
         m, con = self.cfg["map"], self.cfg["console"]
         return {"version": __version__, "title": con["title"], "language": con["language"],
+                "default_system": con.get("default_system", ""),
                 "write_protected": bool(self.cfg["server"]["write_passcode"]), "static": False,
-                "clock_ms": self.clock_ms(), "clock_mode": str(self.cfg["alerts"]["clock"]),
+                "clock_ms": self.clock_ms(), "clock_mode": str(self.cfg["alerts"]["clock"]), "clocks": self.clocks(),
                 "map": {"tile_url": m["tile_url"], "attribution": m["attribution"], "max_zoom": m["max_zoom"]},
                 "network_types": list(dbm.NETWORK_TYPES), "site_types": sorted(model.SITE_TYPES),
                 "component_types": sorted(model.COMPONENT_TYPES), "height_refs": model.HEIGHT_REFS,
@@ -122,16 +129,20 @@ class App:
                                     "zones": zones, "sites": sites["n"], "sites_live": sites["live"] or 0,
                                     "sensors": sensors})
                 regions.append({"key": r["key"], "name": r["name"], "timezone": r["timezone"], "datum": r["datum"],
-                                "language": r["language"], "lat": r["lat"], "lon": r["lon"], "radius_km": r["radius_km"],
+                                "language": r["language"], "lat": r["lat"], "lon": r["lon"], "radius_km": r["radius_km"], "basemap": bool(r["basemap"]),
                                 "note": r["note"], "systems": systems})
             return {"regions": regions}
 
     def map(self, system=None):
         with self.ro() as c:
-            q = ("SELECT s.*, y.key system_key, y.network_type FROM sites s JOIN systems y ON y.id=s.system_id "
+            q = ("SELECT s.*, y.key system_key, y.network_type, g.key region_key, g.basemap FROM sites s "
+                 "JOIN systems y ON y.id=s.system_id JOIN regions g ON g.id=y.region_id "
                  "WHERE s.status!='retired' AND y.status!='retired'")
             args = []
-            if system:
+            if system and system.startswith("region:"):
+                q += " AND g.key=?"
+                args.append(system[7:])
+            elif system:
                 q += " AND y.key=?"
                 args.append(system)
             worst = {}
@@ -146,17 +157,25 @@ class App:
                     last = self._latest(c, x["id"])
                     key_vals.append({"key": x["key"], "name": x["name"], "quantity": x["quantity"],
                                      "display": display(x["quantity"], x["unit"], x["display_unit"]),
-                                     "value": last["value"] if last else None, "ts": last["ts"] if last else None})
+                                     "value": last["value"] if last else None, "ts": last["ts"] if last else None,
+                                     "quality": last["quality"] if last else None})
                 rain = c.execute("SELECT key FROM sensors WHERE site_id=? AND quantity='rain' AND status!='retired' LIMIT 1",
                                  (s["id"],)).fetchone()
                 out.append({"key": s["key"], "name": s["name"], "site_type": s["site_type"], "lat": s["lat"], "lon": s["lon"],
                             "rain_sensor": rain[0] if rain else None,
                             "system": s["system_key"], "network_type": s["network_type"], "status": s["status"],
+                            "region": s["region_key"], "basemap": bool(s["basemap"]),
                             "criticality": s["criticality"], "worst": worst.get(s["id"]), "readings": key_vals})
-            lq = "SELECT l.key, l.name, l.kind, l.geojson, y.key system FROM map_layers l JOIN systems y ON y.id=l.system_id WHERE y.status!='retired'"
-            layers = [{"key": r["key"], "name": r["name"], "kind": r["kind"], "system": r["system"],
-                       "geojson": json.loads(r["geojson"])}
-                      for r in c.execute(lq + (" AND y.key=?" if system else ""), ([system] if system else []))]
+            lq = ("SELECT l.key, l.name, l.kind, l.geojson, y.key system, g.key region FROM map_layers l "
+                  "JOIN systems y ON y.id=l.system_id JOIN regions g ON g.id=y.region_id WHERE y.status!='retired'")
+            if system and system.startswith("region:"):
+                lq, la = lq + " AND g.key=?", [system[7:]]
+            elif system:
+                lq, la = lq + " AND y.key=?", [system]
+            else:
+                la = []
+            layers = [{"key": r["key"], "name": r["name"], "kind": r["kind"], "system": r["system"], "region": r["region"],
+                       "geojson": json.loads(r["geojson"])} for r in c.execute(lq, la)]
             return {"sites": out, "layers": layers}
 
     @staticmethod
@@ -183,7 +202,7 @@ class App:
         return {"key": r["key"], "name": r["name"], "site_type": r["site_type"], "lat": r["lat"], "lon": r["lon"],
                 "zone": zone["key"] if zone else None, "status": r["status"], "criticality": r["criticality"]}
 
-    def site(self, key):
+    def site(self, key, all_alerts=None, clock_ms=None):
         with self.ro() as c:
             r = c.execute("SELECT * FROM sites WHERE key=?", (key,)).fetchone()
             if r is None:
@@ -208,7 +227,10 @@ class App:
                 out["sensors"].append(self._sensor_json(x, comps.get(x["component_id"]), self._latest(c, x["id"])))
             out["pending"] = [dict(kind=p["kind"], key=p["key"]) for p in c.execute(
                 "SELECT kind, key FROM pending_changes")]
-        out["alerts"] = [a for a in self.alerts(include_ended_hours=24 * 7) if a["site"] == key]
+        if all_alerts is None:
+            out["alerts"] = [a for a in self.alerts(include_ended_hours=24 * 7) if a["site"] == key]
+        else:   # the static export passes every alert once, with each system's own clock
+            out["alerts"] = [a for a in all_alerts if a["site"] == key and (a["end_ms"] is None or a["end_ms"] > clock_ms - 7 * 86400_000)]
         return out
 
     @staticmethod

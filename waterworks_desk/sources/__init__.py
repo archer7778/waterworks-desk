@@ -7,9 +7,11 @@ runs network adapters against a trap server that fails on any write.
 """
 from .base import Adapter, Reading  # noqa: F401
 from .csvfile import CsvFolder
+from .ea_rain import EARain
 from .openmeteo import OpenMeteo
+from .stream_edm import StreamEDM
 
-ADAPTERS = {"csv": CsvFolder, "open_meteo": OpenMeteo}
+ADAPTERS = {"csv": CsvFolder, "open_meteo": OpenMeteo, "stream_edm": StreamEDM, "ea_rain": EARain}
 
 
 def make(cfg, source):

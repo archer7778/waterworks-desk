@@ -2,11 +2,14 @@
 # read-only snapshot of the console to GitHub Pages.
 #
 # One-time setup (repository Settings): Pages > Build and deployment > Source: GitHub Actions.
-# Data: BattLeDIM (Zenodo 10.5281/zenodo.4017659, CC BY 4.0) and Open-Meteo (CC BY 4.0).
+# Data: BattLeDIM (Zenodo 10.5281/zenodo.4017659, CC BY 4.0), Open-Meteo (CC BY 4.0), Thames Water
+# storm overflows via Stream (CC BY 4.0) and Environment Agency rainfall (Open Government Licence v3).
 name: Demo
 # Third-party steps are pinned to exact commits (tags can be moved); the comment shows the version.
 
 on:
+  schedule:
+    - cron: "17 */3 * * *"     # London's overflow and rain feeds are live: refresh every 3 hours
   workflow_dispatch:
   push:
     branches: [main]
@@ -65,10 +68,10 @@ jobs:
           5ea1e46d3f2f0a89a3f98d6fd39a851d  2019_SCADA_Pressures.csv
           SUMS
 
-      - name: Build the demo
+      - name: Build the demo (L-Town, and London from its live feeds)
         run: |
           python -u tools/build_demo.py --data data/battledim --out site \
-            || { echo "::warning::Weather fetch failed; building without it"; python -u tools/build_demo.py --data data/battledim --out site --no-weather; }
+            || { echo "::warning::A live feed failed; building with L-Town only"; python -u tools/build_demo.py --data data/battledim --out site --offline --no-london; }
 
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3
         with:

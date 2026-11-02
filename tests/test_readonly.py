@@ -136,4 +136,4 @@ def test_every_network_adapter_passes_the_trap():
             finally:
                 trap.close()
         checked.append(name)
-    assert "open_meteo" in checked
+    assert {"open_meteo", "stream_edm", "ea_rain"} <= set(checked)

@@ -43,6 +43,8 @@ T = {
     "over_overflow": "{sensor} at {site} is at {value}, at or over the overflow level, since {since}. It may be spilling. First check: pump status and inflow, and look for a spill.",
     "near_overflow": "{sensor} at {site} is {value}, within {margin} of the overflow level, since {since}. It could spill if it keeps rising. First check: whether the pumps are running and keeping up.",
     "tank_low": "{site} is down to {value} ({pct}% full) since {since}. Supply from it could fail if it keeps falling. First check: the inlet and the pumps that fill it.",
+    "spilling": "{site} is discharging into {water} since {since}. Sewage may be reaching the river. First check: rainfall and the pumping station downstream; report it if it isn't a storm.",
+    "monitor_offline": "The spill monitor at {site} has been offline since {since}, so a spill there wouldn't be seen. First check: the monitor's power and communications.",
     "source_failing": "The data source {source} has failed {n} times in a row, last at {since}: {message} Readings from it are missing until it works. First check: the export, file share or connection.",
 }
 WHY = {  # (quantity, direction) -> (why it matters, first check)
@@ -59,6 +61,21 @@ WHY = {  # (quantity, direction) -> (why it matters, first check)
     ("turbidity", "high"): ("High turbidity can shield bacteria from disinfection.", "filters and the raw water."),
 }
 DEFAULT_WHY = ("It is outside the range set for it.", "the sensor and the equipment it measures.")
+
+
+def system_clocks(cfg, conn):
+    """{system_id: the time it's judged at}. For a historical demo each system is judged at the
+    end of its own data, so a 2019 test network and a live feed can sit in one console."""
+    mode = str((cfg.data.get("alerts") or {}).get("clock", "now")).strip() if cfg else "now"
+    ids = [r[0] for r in conn.execute("SELECT id FROM systems")]
+    if mode != "data_end":
+        c = clock(cfg, conn) if cfg else int(time.time())
+        return {i: c for i in ids}
+    out = {}
+    for sid, t in conn.execute("SELECT s.system_id, MAX(r.ts) FROM readings r JOIN sensors x ON x.id=r.sensor_id "
+                               "JOIN sites s ON s.id=x.site_id GROUP BY s.system_id"):
+        out[sid] = int(t)
+    return out
 
 
 def clock(cfg, conn):
@@ -117,10 +134,11 @@ def _since_breach(conn, sid, now, lo, hi):
     return r or now
 
 
-def conditions(conn, now, held=None):
+def conditions(conn, now, held=None, nows=None, system=None):
     """Everything that should be alerting at `now`: {ident: alert dict}. `held` is the open
     alerts {ident: row}: a limit alert stays open until two readings in a row are back inside."""
     held = held or {}
+    now_all = now
     out = {}
     regions = {}
     sensors = conn.execute(
@@ -128,17 +146,38 @@ def conditions(conn, now, held=None):
         "s.floor_level_m, s.overflow_level_m, s.system_id, c.criticality comp_crit, r.timezone tz "
         "FROM sensors x JOIN sites s ON s.id=x.site_id JOIN systems y ON y.id=s.system_id "
         "JOIN regions r ON r.id=y.region_id LEFT JOIN components c ON c.id=x.component_id "
-        "WHERE x.status='live' AND s.status='live' AND y.status='live'").fetchall()
+        "WHERE x.status='live' AND s.status='live' AND y.status='live'" + (" AND y.key=?" if system else ""),
+        (system,) if system else ()).fetchall()
     by_site = {}
     for x in sensors:
         tz = regions.setdefault(x["tz"], ZoneInfo(x["tz"] or "UTC"))
+        now = (nows or {}).get(x["system_id"], now_all)
         crit = x["comp_crit"] or x["site_crit"] or 2
         base = {"system_id": x["system_id"], "sensor_id": x["id"], "site_id": x["sid_site"],
                 "component_id": x["component_id"]}
         last = conn.execute("SELECT ts, value FROM readings WHERE sensor_id=? AND ts<=? AND quality!=? "
                             "ORDER BY ts DESC LIMIT ?", (x["id"], now, dbm.BAD, PERSIST)).fetchall()
-        by_site.setdefault(x["sid_site"], []).append((x, last))
         every = x["expected_interval_s"] or 300
+        if x["quantity"] == "state" and x["site_type"] in ("overflow_weir", "outfall"):
+            r = conn.execute("SELECT ts, value, quality FROM readings WHERE sensor_id=? AND ts<=? ORDER BY ts DESC LIMIT 1",
+                             (x["id"], now)).fetchone()
+            if r is None:
+                continue
+            water = (x["note"] or "").split("Discharges to ", 1)[-1].split(".")[0] if "Discharges to " in (x["note"] or "") else "the river"
+            if r["quality"] == dbm.BAD:
+                start = conn.execute("SELECT MIN(ts) FROM readings WHERE sensor_id=? AND ts<=? AND quality=? AND ts>COALESCE("
+                                     "(SELECT MAX(ts) FROM readings WHERE sensor_id=? AND ts<=? AND quality!=?), -1)",
+                                     (x["id"], now, dbm.BAD, x["id"], now, dbm.BAD)).fetchone()[0] or r["ts"]
+                sev, adj = _adjust("advisory", crit)
+                out[f"monitor_offline:{x['id']}"] = {**base, "rule": "monitor_offline", "severity": sev, "start": start, "adj": adj,
+                                                     "t": "monitor_offline", "p": {"site": x["site_name"], "since": start}}
+            elif r["value"] >= 0.5:
+                start = _since_breach(conn, x["id"], now, None, 0.5)
+                sev, adj = _adjust("warning", crit)
+                out[f"spilling:{x['id']}"] = {**base, "rule": "spilling", "severity": sev, "start": start, "adj": adj,
+                                              "t": "spilling", "p": {"site": x["site_name"], "water": water, "since": start}}
+            continue
+        by_site.setdefault(x["sid_site"], []).append((x, last))
         if not last:
             continue
         p = {"sensor": x["name"], "site": x["site_name"]}
@@ -254,12 +293,15 @@ def why_texts():
     return out
 
 
-def evaluate(conn, cfg=None, now=None, log=None):
+def evaluate(conn, cfg=None, now=None, log=None, system=None):
     """Open, update and close alerts to match the network at `now`. Returns what changed."""
-    now = int(now if now is not None else (clock(cfg, conn) if cfg else time.time()))
-    have = {r["ident"]: r for r in conn.execute("SELECT * FROM alerts WHERE end_ms IS NULL")}
-    want = conditions(conn, now, have)
-    if cfg is not None:
+    nows = system_clocks(cfg, conn) if (now is None and cfg is not None) else None
+    now = int(now if now is not None else (max(nows.values()) if nows else (clock(cfg, conn) if cfg else time.time())))
+    have = {r["ident"]: r for r in conn.execute(
+        "SELECT a.* FROM alerts a LEFT JOIN systems y ON y.id=a.system_id WHERE a.end_ms IS NULL"
+        + (" AND y.key=?" if system else ""), (system,) if system else ())}
+    want = conditions(conn, now, have, nows, system)
+    if cfg is not None and system is None:
         want.update(source_conditions(conn, cfg, now))
     tzs = {r["system_id"]: ZoneInfo(r["tz"] or "UTC") for r in conn.execute(
         "SELECT y.id system_id, r.timezone tz FROM systems y JOIN regions r ON r.id=y.region_id")}
@@ -304,7 +346,7 @@ def evaluate(conn, cfg=None, now=None, log=None):
                 escalated.append({"id": cur["id"], "severity": a["severity"], "message": msg})
     for ident, cur in have.items():
         if ident not in want:
-            end = now
+            end = (nows or {}).get(cur["system_id"], now)
             if cur["sensor_id"] is not None and cur["rule"].startswith(("limit", "near", "over", "tank")):
                 r = conn.execute("SELECT MIN(ts) FROM (SELECT ts FROM readings WHERE sensor_id=? AND ts<=? ORDER BY ts DESC LIMIT ?)",
                                  (cur["sensor_id"], now, PERSIST)).fetchone()[0]
@@ -317,35 +359,39 @@ def evaluate(conn, cfg=None, now=None, log=None):
     return {"opened": opened, "escalated": escalated, "closed": closed, "now": now}
 
 
-def replay(conn, start, end, step=3600, log=None):
+def replay(conn, start, end, step=3600, log=None, system=None):
     """Judge the network at every step from start to end, to build up the alert history a
     historical dataset would have produced (used by the demo build)."""
     n = 0
     for t in range(int(start), int(end) + 1, int(step)):
-        evaluate(conn, None, t)
+        evaluate(conn, None, t, system=system)
         n += 1
     if log:
         tot = conn.execute("SELECT COUNT(*) FROM alerts").fetchone()[0]
         log(f"Replayed {n} steps: {tot} alerts in the history.")
 
 
-def active(conn, now_ms=None, system=None, include_shelved=False, include_ended_hours=0):
+def active(conn, now_ms=None, system=None, include_shelved=False, include_ended_hours=0, limit=500):
     now_ms = now_ms or dbm.now_ms()
     q = ("SELECT a.*, s.key site_key, s.name site_name, s.lat, s.lon, x.key sensor_key, x.name sensor_name, "
-         "y.key system_key, y.name system_name FROM alerts a LEFT JOIN sites s ON s.id=a.site_id "
-         "LEFT JOIN sensors x ON x.id=a.sensor_id LEFT JOIN systems y ON y.id=a.system_id WHERE ")
+         "y.key system_key, y.name system_name, g.key region_key FROM alerts a LEFT JOIN sites s ON s.id=a.site_id "
+         "LEFT JOIN sensors x ON x.id=a.sensor_id LEFT JOIN systems y ON y.id=a.system_id "
+         "LEFT JOIN regions g ON g.id=y.region_id WHERE ")
     conds, args = ["(a.end_ms IS NULL" + (" OR a.end_ms>?)" if include_ended_hours else ")")], []
     if include_ended_hours:
         args.append(now_ms - include_ended_hours * 3600_000)
     if not include_shelved:
         conds.append("(a.shelved_until_ms IS NULL OR a.shelved_until_ms<? OR a.end_ms IS NOT NULL)")
         args.append(now_ms)
-    if system:
+    if system and system.startswith("region:"):
+        conds.append("(g.key=? OR a.system_id IS NULL)")
+        args.append(system[7:])
+    elif system:
         conds.append("(y.key=? OR a.system_id IS NULL)")
         args.append(system)
     rows = conn.execute(q + " AND ".join(conds) + " ORDER BY a.end_ms IS NOT NULL, "
-                        "CASE a.severity WHEN 'critical' THEN 0 WHEN 'warning' THEN 1 ELSE 2 END, a.start_ms DESC LIMIT 500",
-                        args).fetchall()
+                        "CASE a.severity WHEN 'critical' THEN 0 WHEN 'warning' THEN 1 ELSE 2 END, a.start_ms DESC LIMIT ?",
+                        (*args, int(limit))).fetchall()
     out = []
     for r in rows:
         d = json.loads(r["data_json"] or "{}")
@@ -356,7 +402,7 @@ def active(conn, now_ms=None, system=None, include_shelved=False, include_ended_
                     "shelve_reason": r["shelve_reason"],
                     "site": r["site_key"], "site_name": r["site_name"], "lat": r["lat"], "lon": r["lon"],
                     "sensor": r["sensor_key"], "sensor_name": r["sensor_name"],
-                    "system": r["system_key"], "system_name": r["system_name"]})
+                    "system": r["system_key"], "system_name": r["system_name"], "region": r["region_key"]})
     return out
 
 

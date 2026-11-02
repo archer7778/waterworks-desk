@@ -298,8 +298,17 @@
  "href.below_overflow": "Độ sâu dưới cao độ tràn",
  "lvl.warning": "cảnh báo",
  "lvl.alarm": "báo động",
- "map.no_tiles": "Không có bản đồ nền: mạng lưới demo này đặt ở vị trí giả định.",
+ "map.no_tiles": "Chưa thiết lập bản đồ đường phố (xem [map] trong config.toml).",
  "site.limits": "Giới hạn",
  "al.returns": "Đã quay lại {n} lần kể từ khi bắt đầu; lần hết gần nhất lúc {time}.",
- "lg.pipes": "Ống chính (độ dày theo cỡ ống)"
+ "lg.pipes": "Ống chính (độ dày theo cỡ ống)",
+ "tpl.spilling": "{site} đang xả ra {water} từ {since}. Nước thải có thể đang chảy ra sông. Kiểm tra trước: lượng mưa và trạm bơm phía hạ lưu; báo cáo nếu không phải do mưa bão.",
+ "tpl.monitor_offline": "Thiết bị giám sát xả tràn tại {site} mất kết nối từ {since}, nên sẽ không thấy được nếu có xả tràn. Kiểm tra trước: nguồn điện và đường truyền của thiết bị.",
+ "sys.all_in": "Tất cả ở {name}",
+ "map.stand_in": "Không có bản đồ đường phố: mạng lưới thử nghiệm này không có vị trí thực.",
+ "state.on": "Bật",
+ "state.off": "Tắt",
+ "state.spilling": "Đang xả tràn",
+ "state.not_spilling": "Không xả tràn",
+ "state.offline": "Mất kết nối"
 }

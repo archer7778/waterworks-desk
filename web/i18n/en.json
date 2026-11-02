@@ -298,8 +298,17 @@
  "href.below_overflow": "Depth below the overflow level",
  "lvl.warning": "warning",
  "lvl.alarm": "alarm",
- "map.no_tiles": "No background map: this demo network is at a stand-in location.",
+ "map.no_tiles": "No street map is set up (see [map] in config.toml).",
  "site.limits": "Limits",
  "al.returns": "Came back {n} times since it started; last cleared {time}.",
- "lg.pipes": "Water mains (width shows pipe size)"
+ "lg.pipes": "Water mains (width shows pipe size)",
+ "tpl.spilling": "{site} is discharging into {water} since {since}. Sewage may be reaching the river. First check: rainfall and the pumping station downstream; report it if it isn't a storm.",
+ "tpl.monitor_offline": "The spill monitor at {site} has been offline since {since}, so a spill there wouldn't be seen. First check: the monitor's power and communications.",
+ "sys.all_in": "Everything in {name}",
+ "map.stand_in": "No street map: this test network has no real location.",
+ "state.on": "On",
+ "state.off": "Off",
+ "state.spilling": "Spilling",
+ "state.not_spilling": "Not spilling",
+ "state.offline": "Offline"
 }

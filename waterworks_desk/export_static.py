@@ -12,7 +12,7 @@ import shutil
 import time
 from pathlib import Path
 
-from . import __version__, logchain, model
+from . import __version__, alerts, logchain, model
 from . import db as dbm
 from .config import find_config
 from .server import WEB, App, _finite
@@ -37,21 +37,25 @@ def export(cfg, out, log=print):
     _w(api / "tree.json", app.tree())
     m = app.map()
     _w(api / "map.json", m)
-    _w(api / "alerts.json", app.alerts(include_shelved=True, include_ended_hours=24 * 30))
-    for s in m["sites"]:
-        _w(api / "sites" / f"{s['key']}.json", app.site(s["key"]))
+    clocks = app.clocks()                                   # each system judged at its own time (demo mode)
     with app.ro() as c:
-        sensors = [r[0] for r in c.execute("SELECT key FROM sensors WHERE status!='retired'")]
+        everything = alerts.active(c, app.clock_ms(), None, True, 24 * 3650, limit=20000)
+    _w(api / "alerts.json", [a for a in everything if a["end_ms"] is None or a["end_ms"] > clocks.get(a["system"], clock * 1000) - 30 * 86400_000])
+    for s in m["sites"]:
+        _w(api / "sites" / f"{s['key']}.json", app.site(s["key"], everything, clocks.get(s["system"], clock * 1000)))
+    with app.ro() as c:
+        sensors = [(r[0], r[1]) for r in c.execute("SELECT x.key, y.key FROM sensors x JOIN sites s ON s.id=x.site_id "
+                                                  "JOIN systems y ON y.id=s.system_id WHERE x.status!='retired'")]
         _w(api / "log.json", logchain.entries(c))
         _w(api / "log" / "verify.json", logchain.verify(c))
         _w(api / "setup" / "export.json", model.export_bundle(c))
     _w(api / "setup" / "pending.json", [])
     _w(api / "setup" / "unmapped.json", {})
-    for key in sensors:
-        d = api / "sensors" / key
-        _w(d / "raw.json", app.readings(key, clock - 8 * 86400, clock, "raw"))
-        _w(d / "3600.json", app.readings(key, clock - 95 * 86400, clock, 3600))
-        _w(d / "86400.json", app.readings(key, 0, clock, 86400))
+    for key, system in sensors:
+        d, end = api / "sensors" / key, clocks.get(system, clock * 1000) // 1000
+        _w(d / "raw.json", app.readings(key, end - 8 * 86400, end, "raw"))
+        _w(d / "3600.json", app.readings(key, end - 95 * 86400, end, 3600))
+        _w(d / "86400.json", app.readings(key, 0, end, 86400))
     page = (WEB / "index.html").read_text(encoding="utf-8")
     inject = f'<script>window.WWD_STATIC={{"base":"api/","snapshot":{clock}}};</script>\n'
     page = page.replace('<script src="vendor/leaflet/leaflet.js"></script>', inject + '<script src="vendor/leaflet/leaflet.js"></script>', 1)

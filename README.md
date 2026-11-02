@@ -11,8 +11,9 @@ runs on the Python standard library on any ordinary computer or small server.
 **Status: M1.** The console has a map of every site at its GPS position, a page per site
 with a side view of wells and tanks and charts with limits and rain, setup screens for
 everything, critical/warning/advisory alerts in plain language, and the signed audit trail,
-in English and Vietnamese. A read-only public demo on the BattLeDIM L-Town data builds itself
-on GitHub Pages. Next (M2): the learned normal, sensor-health checks and named accounts.
+in English and Vietnamese. A read-only public demo builds itself on GitHub Pages with two
+systems: London's real sewer overflows and rain gauges on a real street map, from live open
+feeds, and the BattLeDIM L-Town test network with its known leaks. Next (M2): the learned normal, sensor-health checks and named accounts.
 
 > **Not a safety system.** The console advises. The utility's SCADA alarms, interlocks and
 > operators stay in charge. It never sends a command to a pump, valve, gate or PLC.
@@ -22,7 +23,7 @@ on GitHub Pages. Next (M2): the learned normal, sensor-health checks and named a
 | Part | What it does |
 |---|---|
 | `waterworks_desk/model.py` | Setting up by hand: regions, systems (drinking water, sanitary sewer, storm drain, combined sewer), zones, sites, components, sensors. Checks in plain words, drafts and go-live, heights typed the way people measure them. |
-| `waterworks_desk/sources/` | Read-only adapters: CSV (wide or long, any delimiter, decimal commas, time zones) and Open-Meteo weather. |
+| `waterworks_desk/sources/` | Read-only adapters: CSV (wide or long, any delimiter, decimal commas, time zones), storm overflow monitors from Stream (any English water company), Environment Agency rainfall, and Open-Meteo weather. |
 | `waterworks_desk/alerts.py` | Critical, warning and advisory alerts: limits, silent sensors and sites, overflow and tank levels, failing sources. Severity moved by criticality; one alert per problem; acknowledge and shelve are signed. |
 | `waterworks_desk/ingest.py` | Reads sources, converts units, stores readings, keeps 1-minute, 15-minute, hourly and daily rollups, applies retention, then judges alerts. |
 | `waterworks_desk/units.py` | One canonical unit per quantity (pressure in metres of head, flow in m³/h, …). |
@@ -30,7 +31,7 @@ on GitHub Pages. Next (M2): the learned normal, sensor-health checks and named a
 | `waterworks_desk/server.py` | JSON API and the console (`web/index.html`, with Leaflet bundled so the map works offline; words in `web/i18n/`). |
 | `waterworks_desk/export_static.py` | A read-only snapshot of the console as static files, for the public demo. |
 | `tests/` | End-to-end tests, the read-only checks and write traps, a real-data test on L-Town, and a browser test of setting up a site by hand. |
-| `tools/` | `build_demo.py` (the whole public demo), `ltown_setup.py` (setup from the L-Town model), `loadtest.py` (storage sizing). |
+| `tools/` | `build_demo.py` (the whole public demo), `london_setup.py` (London from the overflow and rain feeds), `ltown_setup.py` (setup from the L-Town model), `loadtest.py` (storage sizing). |
 
 ## Quick start
 
@@ -93,12 +94,21 @@ They are called alerts, never alarms: the utility's SCADA alarms stay in charge.
 
 ## The public demo
 
+**London** is real: Thames Water's 573 storm overflow monitors at their real positions with
+their live status (spilling, stopped, offline), and the Environment Agency's rain gauges, over
+OpenStreetMap. Overflows alert when they discharge and when their monitor goes offline; the
+last week is replayed so recent spills are in the history.
+
+**L-Town** is BattLeDIM's test network. It has no real location, so it's drawn without a
+street map (its region sets `basemap = 0`), with its 905 mains. Each system is judged at the end
+of its own data, so the 2019 test network and the live London feeds sit in one console.
+
 `tools/build_demo.py` builds it with the same code a real installation runs: it sets up L-Town
 from its EPANET model, reads 2018, gives each sensor demo limits just outside anything it read
 in 2018, puts everything live, reads 2019 and replays the year hour by hour so the alerts it
 would have raised are in the history, then exports the read-only console.
 `.github/workflows/demo.yml` downloads the data from Zenodo (checking every file's checksum),
-builds and publishes it to GitHub Pages.
+fetches London's feeds, builds and publishes it to GitHub Pages every three hours.
 
 ## Data sources
 
@@ -124,6 +134,11 @@ WATERWORKS_LTOWN_DIR=/path/to/battledim python -m pytest tests/test_ltown.py -q 
 
 ## Data credits
 
+- Storm overflows: Thames Water, via [Stream](https://www.streamwaterdata.co.uk/), CC BY 4.0.
+- Rainfall: this uses Environment Agency rainfall data from the
+  [real-time data API (Beta)](https://environment.data.gov.uk/flood-monitoring/doc/reference),
+  Open Government Licence v3.
+- Map: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
 - Weather: [Open-Meteo](https://open-meteo.com/), CC BY 4.0.
 - L-Town demo: BattLeDIM dataset, Vrachimis et al. (2020), Zenodo
   [10.5281/zenodo.4017659](https://doi.org/10.5281/zenodo.4017659), CC BY 4.0. The data

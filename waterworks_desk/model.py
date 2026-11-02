@@ -46,7 +46,7 @@ LEVEL_QUANTITIES = {"level", "pressure"}
 
 # kind -> table, parent field (key in data, column, parent table), editable columns
 KINDS = {
-    "region": ("regions", None, ("name", "timezone", "datum", "language", "lat", "lon", "radius_km", "note")),
+    "region": ("regions", None, ("name", "timezone", "datum", "language", "lat", "lon", "radius_km", "basemap", "note")),
     "system": ("systems", ("region", "region_id", "regions"), ("name", "network_type", "departments")),
     "zone": ("zones", ("system", "system_id", "systems"), ("name", "kind", "boundary_json")),
     "site": ("sites", ("system", "system_id", "systems"),
@@ -203,6 +203,7 @@ def _clean(conn, kind, data, existing, known_sources):
         take("lat", lambda x: parse_coord(x, "latitude"))
         take("lon", lambda x: parse_coord(x, "longitude"))
         take("radius_km", _num)
+        take("basemap", lambda x: 0 if str(x).strip().lower() in ("0", "false", "no", "off", "none") else 1)
         if cur("radius_km") is not None and cur("radius_km") <= 0:
             errors.append("the region's radius must be more than 0 km")
         if not cur("datum"):

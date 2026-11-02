@@ -57,7 +57,7 @@ def build(inp, origin_lat, origin_lon, source="ltown"):
         return ll(((xy[a][0] + xy[b][0]) / 2, (xy[a][1] + xy[b][1]) / 2))
 
     region = {"key": "ltown", "name": "L-Town (demo, stand-in location)", "timezone": "UTC",
-              "datum": "L-Town model datum (EPANET elevations)", "lat": None, "lon": None, "radius_km": 25,
+              "datum": "L-Town model datum (EPANET elevations)", "lat": None, "lon": None, "radius_km": 25, "basemap": 0,
               "note": "BattLeDIM's L-Town placed at a stand-in location; it is not where the network is. "
                       "Data: BattLeDIM, Zenodo 10.5281/zenodo.4017659, CC BY 4.0."}
     c = ll(((min(x for x, _ in xy.values()) + max(x for x, _ in xy.values())) / 2,
