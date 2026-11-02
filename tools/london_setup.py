@@ -3,6 +3,7 @@
   the storm overflows Thames Water publishes on Stream (a saved query result, or the live layer)
   the Environment Agency's rainfall stations (GET /id/stations?parameter=rainfall&lat=..&long=..&dist=..)
 
+    python tools/london_setup.py > london-setup.json                 # from the live feeds
     python tools/london_setup.py --overflows thames-overflows.json --rain ea-rain-stations.json > london-setup.json
 
 Every position is the real one, so London is shown over a real street map. Overflows that share
@@ -14,6 +15,30 @@ flood-monitoring API, Open Government Licence v3.
 import argparse
 import json
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+THAMES = ("https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/"
+          "Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0")
+EA_STATIONS = "https://environment.data.gov.uk/flood-monitoring/id/stations?parameter=rainfall&lat=51.5&long=-0.12&dist=20"
+
+
+def load(src):
+    """A JSON file, or a URL fetched with a read-only GET."""
+    if str(src).startswith("http"):
+        from waterworks_desk.sources.openmeteo import get_json
+        return get_json(str(src))
+    with open(src, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_overflows(src):
+    """A saved query result, or every feature from the live ArcGIS layer."""
+    if str(src).startswith("http"):
+        from waterworks_desk.sources.stream_edm import fetch
+        return {"features": fetch(str(src))}
+    return load(src)
 
 
 def build(overflows, rain, overflow_source="thames", rain_source="ea"):
@@ -58,11 +83,10 @@ def build(overflows, rain, overflow_source="thames", rain_source="ea"):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--overflows", required=True, help="saved Stream query result (JSON)")
-    ap.add_argument("--rain", required=True, help="saved EA station list (JSON)")
+    ap.add_argument("--overflows", default=THAMES, help="overflow layer URL (default: Thames Water), or a saved query (JSON)")
+    ap.add_argument("--rain", default=EA_STATIONS, help="EA rainfall station list URL (default: central London), or a saved list")
     a = ap.parse_args(argv)
-    with open(a.overflows, encoding="utf-8") as f, open(a.rain, encoding="utf-8") as g:
-        json.dump(build(json.load(f), json.load(g)), sys.stdout, indent=1)
+    json.dump(build(load_overflows(a.overflows), load(a.rain)), sys.stdout, indent=1)
     sys.stdout.write("\n")
 
 

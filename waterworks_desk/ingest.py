@@ -3,7 +3,7 @@ update the rollups and apply the retention policy.
 
 Run by a systemd timer every few minutes. Safe to run by hand:
     python -m waterworks_desk.ingest                    # read every enabled source
-    python -m waterworks_desk.ingest --source ltown     # just one
+    python -m waterworks_desk.ingest --source exports   # just one
     python -m waterworks_desk.ingest --force            # re-read files even if unchanged
     python -m waterworks_desk.ingest --setup site.json --actor "A. Name"   # import a setup file
     python -m waterworks_desk.ingest --export setup.json                    # export the setup

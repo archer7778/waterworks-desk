@@ -15,9 +15,9 @@ next run. It only ever opens files for reading.
 
 config.toml:
     [[sources]]
-    key = "ltown"
+    key = "exports"
     type = "csv"
-    path = "data/import/ltown"        # a folder or a single file
+    path = "data/import"              # a folder or a single file
     pattern = "*_SCADA_*.csv"          # optional, default "*.csv"
     layout = "wide"                    # or "long"
     timezone = "UTC"                   # time zone of the timestamps in the files

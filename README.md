@@ -11,9 +11,8 @@ runs on the Python standard library on any ordinary computer or small server.
 **Status: M1.** The console has a map of every site at its GPS position, a page per site
 with a side view of wells and tanks and charts with limits and rain, setup screens for
 everything, critical/warning/advisory alerts in plain language, and the signed audit trail,
-in English and Vietnamese. A read-only public demo builds itself on GitHub Pages with two
-systems: London's real sewer overflows and rain gauges on a real street map, from live open
-feeds, and the BattLeDIM L-Town test network with its known leaks. Next (M2): the learned normal, sensor-health checks and named accounts.
+in English and Vietnamese. A read-only public demo builds itself on GitHub Pages: London's real
+sewer overflows and rain gauges on a real street map, from live open data. Next (M2): the learned normal, sensor-health checks and named accounts.
 
 > **Not a safety system.** The console advises. The utility's SCADA alarms, interlocks and
 > operators stay in charge. It never sends a command to a pump, valve, gate or PLC.
@@ -30,14 +29,15 @@ feeds, and the BattLeDIM L-Town test network with its known leaks. Next (M2): th
 | `waterworks_desk/logchain.py` | The signed audit trail. Every change names the person who made it. |
 | `waterworks_desk/server.py` | JSON API and the console (`web/index.html`, with Leaflet bundled so the map works offline; words in `web/i18n/`). |
 | `waterworks_desk/export_static.py` | A read-only snapshot of the console as static files, for the public demo. |
-| `tests/` | End-to-end tests, the read-only checks and write traps, a real-data test on L-Town, and a browser test of setting up a site by hand. |
-| `tools/` | `build_demo.py` (the whole public demo), `london_setup.py` (London from the overflow and rain feeds), `ltown_setup.py` (setup from the L-Town model), `loadtest.py` (storage sizing). |
+| `tests/` | End-to-end tests, the read-only checks and write traps, tests on small samples of the real London feeds, and a browser test of setting up a site by hand. |
+| `tools/` | `build_demo.py` (the whole public demo), `london_setup.py` (London from the overflow and rain feeds), `loadtest.py` (storage sizing). |
 
 ## Quick start
 
 ```bash
 cp config.example.toml config.toml        # then edit it
-python -m waterworks_desk.ingest --setup examples/ltown-setup.json --actor "Your name" --live
+python tools/london_setup.py > london-setup.json      # or set your own network up in the console
+python -m waterworks_desk.ingest --setup london-setup.json --actor "Your name" --live
 python -m waterworks_desk.ingest          # read the sources once
 python -m waterworks_desk.server          # http://127.0.0.1:8080
 ```
@@ -99,16 +99,13 @@ their live status (spilling, stopped, offline), and the Environment Agency's rai
 OpenStreetMap. Overflows alert when they discharge and when their monitor goes offline; the
 last week is replayed so recent spills are in the history.
 
-**L-Town** is BattLeDIM's test network. It has no real location, so it's drawn without a
-street map (its region sets `basemap = 0`), with its 905 mains. Each system is judged at the end
-of its own data, so the 2019 test network and the live London feeds sit in one console.
+`tools/build_demo.py` builds it with the same code a real installation runs: it sets London
+up from the two feeds, reads them, replays the last week so recent spills are in the alert
+history, and exports the read-only console. `.github/workflows/demo.yml` runs it and publishes
+the result to GitHub Pages every three hours.
 
-`tools/build_demo.py` builds it with the same code a real installation runs: it sets up L-Town
-from its EPANET model, reads 2018, gives each sensor demo limits just outside anything it read
-in 2018, puts everything live, reads 2019 and replays the year hour by hour so the alerts it
-would have raised are in the history, then exports the read-only console.
-`.github/workflows/demo.yml` downloads the data from Zenodo (checking every file's checksum),
-fetches London's feeds, builds and publishes it to GitHub Pages every three hours.
+A region with no real location (a test network) can set `basemap = 0` to be drawn without a
+street map; systems can carry map layers such as pipes and sewers (GeoJSON).
 
 ## Data sources
 
@@ -122,14 +119,12 @@ canonical unit. Tags that arrive with no sensor set up are remembered so they ca
 Measured with `tools/loadtest.py` on a 2-core cloud machine:
 3,000 sensors at 1-minute resolution store at about 46,000 readings a second. Each 5-minute
 run takes about 0.5 s. Raw data takes about 26 bytes a reading (111 MB a day). A year with
-raw data kept 90 days needs about 16.5 GB. Use an SSD, not an SD card. The real L-Town data
-(2 years, 7.8 million readings) imports in about 40 seconds into 336 MB.
+raw data kept 90 days needs about 16.5 GB. Use an SSD, not an SD card.
 
 ## Tests
 
 ```bash
 python -m pytest tests -q
-WATERWORKS_LTOWN_DIR=/path/to/battledim python -m pytest tests/test_ltown.py -q   # with the real data
 ```
 
 ## Data credits
@@ -140,10 +135,6 @@ WATERWORKS_LTOWN_DIR=/path/to/battledim python -m pytest tests/test_ltown.py -q 
   Open Government Licence v3.
 - Map: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
 - Weather: [Open-Meteo](https://open-meteo.com/), CC BY 4.0.
-- L-Town demo: BattLeDIM dataset, Vrachimis et al. (2020), Zenodo
-  [10.5281/zenodo.4017659](https://doi.org/10.5281/zenodo.4017659), CC BY 4.0. The data
-  isn't in this repository; download it from Zenodo. The demo places L-Town at a labelled
-  stand-in location.
 
 ## Licence
 

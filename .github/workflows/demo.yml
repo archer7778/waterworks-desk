@@ -1,9 +1,9 @@
-# Builds the public L-Town demo with the same code a real installation runs, and publishes a
-# read-only snapshot of the console to GitHub Pages.
+# Builds the public London demo from live open data with the same code a real installation runs,
+# and publishes a read-only snapshot of the console to GitHub Pages.
 #
 # One-time setup (repository Settings): Pages > Build and deployment > Source: GitHub Actions.
-# Data: BattLeDIM (Zenodo 10.5281/zenodo.4017659, CC BY 4.0), Open-Meteo (CC BY 4.0), Thames Water
-# storm overflows via Stream (CC BY 4.0) and Environment Agency rainfall (Open Government Licence v3).
+# Data: Thames Water storm overflows via Stream (CC BY 4.0) and Environment Agency rainfall
+# (Open Government Licence v3). Map: OpenStreetMap.
 name: Demo
 # Third-party steps are pinned to exact commits (tags can be moved); the comment shows the version.
 
@@ -43,35 +43,8 @@ jobs:
           pip install pytest
           python -m pytest tests -q --ignore=tests/test_ui.py
 
-      - name: Restore the BattLeDIM files
-        id: cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
-        with:
-          path: data/battledim
-          key: battledim-v1
-
-      - name: Download the BattLeDIM files from Zenodo (first run only)
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p data/battledim && cd data/battledim
-          for f in L-TOWN.inp 2018_SCADA_Flows.csv 2018_SCADA_Levels.csv 2018_SCADA_Pressures.csv \
-                   2019_SCADA_Flows.csv 2019_SCADA_Levels.csv 2019_SCADA_Pressures.csv; do
-            curl -fsSL --retry 4 -o "$f" "https://zenodo.org/records/4017659/files/$f?download=1"
-          done
-          md5sum -c <<'SUMS'
-          bfbb16b8b463e0576200ba6ad360f68e  L-TOWN.inp
-          d0602c06946b46287e956f007e4264ee  2018_SCADA_Flows.csv
-          92a512d6749ddf66fd6d99f2bdde6cc4  2018_SCADA_Levels.csv
-          d389d8541350c19ff0bfc6b80f246d35  2018_SCADA_Pressures.csv
-          28fc99fdcbf80fcd26079e7fe602d6dc  2019_SCADA_Flows.csv
-          e5a8050bd38729e4b7648b9d52abd5b1  2019_SCADA_Levels.csv
-          5ea1e46d3f2f0a89a3f98d6fd39a851d  2019_SCADA_Pressures.csv
-          SUMS
-
-      - name: Build the demo (L-Town, and London from its live feeds)
-        run: |
-          python -u tools/build_demo.py --data data/battledim --out site \
-            || { echo "::warning::A live feed failed; building with L-Town only"; python -u tools/build_demo.py --data data/battledim --out site --offline --no-london; }
+      - name: Build the demo from London's live feeds
+        run: python -u tools/build_demo.py --out site
 
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3
         with:
