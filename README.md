@@ -8,11 +8,15 @@ needs attention, and why.
 It is built from the engine of [Downlink Desk](https://github.com/archer7778/downlink-desk) and
 runs on the Python standard library on any ordinary computer or small server.
 
-**Status: M1.** The console has a map of every site at its GPS position, a page per site
-with a side view of wells and tanks and charts with limits and rain, setup screens for
-everything, critical/warning/advisory alerts in plain language, and the signed audit trail,
-in English and Vietnamese. A read-only public demo builds itself on GitHub Pages: London's real
-sewer overflows and rain gauges on a real street map, from live open data. Next (M2): the learned normal, sensor-health checks and named accounts.
+**Live demo: [archer7778.github.io/waterworks-desk](https://archer7778.github.io/waterworks-desk/)**:
+Thames Water's 573 storm overflows and the Environment Agency's rain gauges, read from open
+data and rebuilt automatically every three hours.
+
+**Status: M1 (v0.4).** The console has a map of every site at its GPS position, a page per
+site with a side view of wells and tanks and charts with limits and rain, setup screens for
+everything, critical/warning/advisory alerts in plain language, storm overflow spill counts
+with possible dry-day spill alerts, and the signed audit trail, in English and Vietnamese.
+Next (M2): the learned normal, sensor-health checks and named accounts.
 
 > **Not a safety system.** The console advises. The utility's SCADA alarms, interlocks and
 > operators stay in charge. It never sends a command to a pump, valve, gate or PLC.
@@ -23,7 +27,8 @@ sewer overflows and rain gauges on a real street map, from live open data. Next 
 |---|---|
 | `waterworks_desk/model.py` | Setting up by hand: regions, systems (drinking water, sanitary sewer, storm drain, combined sewer), zones, sites, components, sensors. Checks in plain words, drafts and go-live, heights typed the way people measure them. |
 | `waterworks_desk/sources/` | Read-only adapters: CSV (wide or long, any delimiter, decimal commas, time zones), storm overflow monitors from Stream (any English water company), Environment Agency rainfall, and Open-Meteo weather. |
-| `waterworks_desk/alerts.py` | Critical, warning and advisory alerts: limits, silent sensors and sites, overflow and tank levels, failing sources. Severity moved by criticality; one alert per problem; acknowledge and shelve are signed. |
+| `waterworks_desk/alerts.py` | Critical, warning and advisory alerts: limits, silent sensors and sites, overflow and tank levels, overflows spilling (and possibly spilling on a dry day), monitors offline, failing sources. Severity moved by criticality; one alert per problem; acknowledge and shelve are signed. |
+| `waterworks_desk/spills.py` | Storm overflow spill periods, the 12/24 count used in England's returns, and the dry-day check against the nearest rain gauges. |
 | `waterworks_desk/ingest.py` | Reads sources, converts units, stores readings, keeps 1-minute, 15-minute, hourly and daily rollups, applies retention, then judges alerts. |
 | `waterworks_desk/units.py` | One canonical unit per quantity (pressure in metres of head, flow in m³/h, …). |
 | `waterworks_desk/logchain.py` | The signed audit trail. Every change names the person who made it. |
@@ -36,7 +41,7 @@ sewer overflows and rain gauges on a real street map, from live open data. Next 
 
 ```bash
 cp config.example.toml config.toml        # then edit it
-python tools/london_setup.py > london-setup.json      # or set your own network up in the console
+python tools/london_setup.py > london-setup.json      # London; or set your own network up in the console
 python -m waterworks_desk.ingest --setup london-setup.json --actor "Your name" --live
 python -m waterworks_desk.ingest          # read the sources once
 python -m waterworks_desk.server          # http://127.0.0.1:8080
@@ -119,7 +124,11 @@ GitHub Actions cache) and the spill history grows from the first run onward.
 `tools/build_demo.py` builds it with the same code a real installation runs: it sets London
 up from the two feeds, reads them, replays the last week so recent spills are in the alert
 history, and exports the read-only console. `.github/workflows/demo.yml` runs it and publishes
-the result to GitHub Pages every three hours.
+the result to GitHub Pages every three hours, on GitHub's own schedule: nothing needs to be
+running anywhere else. GitHub switches off schedules in public repositories after 60 days
+without a commit; the workflow re-enables itself on each run to stop that. If it ever does
+stop, GitHub emails the owner, and *Actions → Demo → Enable workflow* turns it back on.
+To fork it: Settings → Pages → Source: GitHub Actions, then run the Demo workflow once.
 
 A region with no real location (a test network) can set `basemap = 0` to be drawn without a
 street map; systems can carry map layers such as pipes and sewers (GeoJSON).

@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: read
+  actions: write        # only to keep the schedule switched on (see the last step)
   pages: write
   id-token: write
 
@@ -65,3 +66,12 @@ jobs:
 
       - id: deploy
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4
+
+      # GitHub switches off scheduled workflows in a public repository after 60 days without a
+      # commit. Re-enabling this workflow through the API resets that clock, so the demo keeps
+      # updating itself while nobody touches the code.
+      - name: Keep the schedule on
+        if: always() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/demo.yml/enable" || true

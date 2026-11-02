@@ -218,8 +218,11 @@ def main(argv=None):
             else:
                 res = model.go_live(conn, "system", a.go_live, a.actor, known)
                 print(f"{res['live']} item(s) are now live.")
-            for w in res.get("warnings", []):
+            notes = res.get("warnings", [])
+            for w in notes[:5]:
                 print("  note:", w)
+            if len(notes) > 5:
+                print(f"  … and {len(notes) - 5} more notes (the same checks show on each item in the console).")
             return 0
     except model.SetupError as e:
         print("Not saved. Problems:", *[f"  - {m}" for m in e.errors], sep="\n", file=sys.stderr)
