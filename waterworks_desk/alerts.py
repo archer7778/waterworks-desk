@@ -44,6 +44,7 @@ T = {
     "near_overflow": "{sensor} at {site} is {value}, within {margin} of the overflow level, since {since}. It could spill if it keeps rising. First check: whether the pumps are running and keeping up.",
     "tank_low": "{site} is down to {value} ({pct}% full) since {since}. Supply from it could fail if it keeps falling. First check: the inlet and the pumps that fill it.",
     "spilling": "{site} is discharging into {water} since {since}. Sewage may be reaching the river. First check: rainfall and the pumping station downstream; report it if it isn't a storm.",
+    "dry_spill": "{site} started spilling into {water} at {since} on what looks like a dry day: the nearest rain gauges ({gauges}) recorded at most {mm} mm that day and the 24 hours before; the Environment Agency counts a spill as dry below 0.25 mm. Spills without rain can point to a blockage, a failed pump or too little capacity, though rain far upstream in a large catchment can arrive late. First check: the pumping station and screens downstream; it may need reporting.",
     "monitor_offline": "The spill monitor at {site} has been offline since {since}, so a spill there wouldn't be seen. First check: the monitor's power and communications.",
     "source_failing": "The data source {source} has failed {n} times in a row, last at {since}: {message} Readings from it are missing until it works. First check: the export, file share or connection.",
 }
@@ -142,7 +143,7 @@ def conditions(conn, now, held=None, nows=None, system=None):
     out = {}
     regions = {}
     sensors = conn.execute(
-        "SELECT x.*, s.name site_name, s.key site_key, s.id sid_site, s.criticality site_crit, s.site_type, "
+        "SELECT x.*, s.name site_name, s.key site_key, s.id sid_site, s.criticality site_crit, s.site_type, s.lat site_lat, s.lon site_lon, "
         "s.floor_level_m, s.overflow_level_m, s.system_id, c.criticality comp_crit, r.timezone tz "
         "FROM sensors x JOIN sites s ON s.id=x.site_id JOIN systems y ON y.id=s.system_id "
         "JOIN regions r ON r.id=y.region_id LEFT JOIN components c ON c.id=x.component_id "
@@ -176,6 +177,14 @@ def conditions(conn, now, held=None, nows=None, system=None):
                 sev, adj = _adjust("warning", crit)
                 out[f"spilling:{x['id']}"] = {**base, "rule": "spilling", "severity": sev, "start": start, "adj": adj,
                                               "t": "spilling", "p": {"site": x["site_name"], "water": water, "since": start}}
+                from . import spills
+                d = spills.dry_check(conn, x["site_lat"], x["site_lon"], start, now, x["tz"] or "UTC")
+                if d["dry"]:
+                    sev, adj = _adjust("warning", crit)
+                    names = ", ".join(f"{g['name']}, {g['km']:g} km" for g in d["gauges"])
+                    out[f"dry_spill:{x['id']}"] = {**base, "rule": "dry_spill", "severity": sev, "start": start, "adj": adj,
+                                                   "t": "dry_spill", "p": {"site": x["site_name"], "water": water, "since": start,
+                                                                           "gauges": names, "mm": f"{d['mm']:g}"}}
             continue
         by_site.setdefault(x["sid_site"], []).append((x, last))
         if not last:
@@ -347,7 +356,7 @@ def evaluate(conn, cfg=None, now=None, log=None, system=None):
     for ident, cur in have.items():
         if ident not in want:
             end = (nows or {}).get(cur["system_id"], now)
-            if cur["rule"] == "spilling" and cur["sensor_id"] is not None:
+            if cur["rule"] in ("spilling", "dry_spill") and cur["sensor_id"] is not None:
                 r = conn.execute("SELECT MIN(ts) FROM readings WHERE sensor_id=? AND ts>=? AND ts<=? AND value<0.5",
                                  (cur["sensor_id"], cur["start_ms"] // 1000, end)).fetchone()[0]
                 end = r or end

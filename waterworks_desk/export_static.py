@@ -51,6 +51,8 @@ def export(cfg, out, log=print):
         _w(api / "setup" / "export.json", model.export_bundle(c))
     _w(api / "setup" / "pending.json", [])
     _w(api / "setup" / "unmapped.json", {})
+    for days in (7, 30, 365, 0):
+        _w(api / f"spills-{days}.json", app.spills(None, days))
     with app.ro() as c:
         states = {r[0] for r in c.execute("SELECT key FROM sensors WHERE quantity='state'")}
     for key, system in sensors:

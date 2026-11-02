@@ -14,6 +14,7 @@ Read endpoints
   GET /api/sites/<key>                  one site: components, sensors, latest readings, alerts
   GET /api/sensors/<key>/readings?from=&to=&res=auto|raw|60|900|3600|86400
   GET /api/alerts?system=&shelved=1&ended_hours=24
+  GET /api/spills?system=&days=30          per overflow: spills (12/24 method), hours, possible dry-day spills (days=0: all data)
   GET /api/setup/item?kind=&key=        one item as an editable form
   GET /api/setup/pending                changes to live items waiting to be applied
   GET /api/setup/export                 everything set up by hand, as a setup bundle
@@ -43,7 +44,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import __version__, alerts, ingest, logchain, model, units
+from . import __version__, alerts, ingest, logchain, model, spills, units
 from . import db as dbm
 from .config import find_config
 
@@ -287,6 +288,28 @@ class App:
         with self.ro() as c:
             return alerts.active(c, self.clock_ms(), system, include_shelved, include_ended_hours)
 
+    def spills(self, system=None, days=30):
+        """Spill report per overflow: 12/24 counts, hours, possible dry-day spills."""
+        with self.ro() as c:
+            end = max(self.clocks().values() or [self.clock_ms()]) // 1000
+            if system and not system.startswith("region:"):
+                end = self.clocks().get(system, end * 1000) // 1000
+            tz = "UTC"
+            r = c.execute("SELECT g.timezone FROM regions g " + (
+                "WHERE g.key=?" if system and system.startswith("region:") else
+                "JOIN systems y ON y.region_id=g.id WHERE y.key=?" if system else "LIMIT 1"),
+                ([system[7:]] if system and system.startswith("region:") else [system] if system else [])).fetchone()
+            if r:
+                tz = r[0] or "UTC"
+            first = c.execute("SELECT MIN(r.ts) FROM readings r JOIN sensors x ON x.id=r.sensor_id WHERE x.quantity='state'").fetchone()[0] or end
+            start = first if not days else end - int(days) * 86400
+            snap = [s["key"] for s in self.cfg.sources if s.get("type") == "stream_edm"]
+            out = spills.report(c, start, end, end, system, tz, snap)
+            if out["complete_from"]:
+                out["complete_from"] = min(out["complete_from"], end)
+            out["days"] = int(days or 0)
+            return out
+
     def unmapped(self):
         with self.ro() as c:
             return {s: dbm.meta_get(c, f"unmapped:{s}", {}) for s in sorted(self.known_sources)}
@@ -432,6 +455,9 @@ def make_handler(app):
                 if p == "/api/alerts":
                     return self._json(app.alerts(q.get("system") or None, q.get("shelved") == "1",
                                                  min(_int(q, "ended_hours") or 0, 24 * 90)))
+                if p == "/api/spills":
+                    d = _int(q, "days")
+                    return self._json(app.spills(q.get("system") or None, 30 if d is None else max(0, min(d, 3650))))
                 if p == "/api/setup/item":
                     if q.get("kind") not in model.KINDS:
                         raise ValueError("kind?")

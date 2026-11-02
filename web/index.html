@@ -98,6 +98,9 @@ main{max-width:1500px;margin:0 auto;padding:14px 16px 48px}
 table{border-collapse:collapse;width:100%}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:650}
+th button.sort{all:unset;cursor:pointer}th button.sort:focus-visible{outline:2px solid var(--accent)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
 tr.pick{cursor:pointer} tr.pick:hover{background:var(--sunk)} tr.sel{background:var(--accent-bg)}
 .val{font-size:17px;font-weight:650}
 .chart svg{width:100%;height:auto;display:block}
@@ -137,6 +140,7 @@ dialog .dlg-head{display:flex;justify-content:space-between;align-items:center;m
   </div>
   <nav class="tabs" aria-label="Views">
     <button data-view="overview" data-t="nav.overview"></button>
+    <button data-view="spills" data-t="nav.spills"></button>
     <button data-view="setup" data-t="nav.setup"></button>
     <button data-view="log" data-t="nav.log"></button>
   </nav>
@@ -172,6 +176,7 @@ dialog .dlg-head{display:flex;justify-content:space-between;align-items:center;m
   </section>
 
   <section id="v-site" hidden></section>
+  <section id="v-spills" hidden></section>
   <section id="v-setup" hidden></section>
   <section id="v-log" hidden></section>
   <div class="foot" id="foot"></div>
@@ -206,6 +211,7 @@ async function loadLang(l){
 function staticFile(path){
   const [base,qs]=path.split("?"),q=new URLSearchParams(qs||""),n=base.replace(/^\/api\//,"");
   if(n==="alerts")return "alerts";
+  if(n==="spills")return "spills-"+(q.get("days")??"30");
   if(n.startsWith("sensors/")){const key=n.split("/")[1],from=+q.get("from"),to=+q.get("to"),span=to-from;
     return {sensor:key,file:span<=8*86400?"raw":span<=95*86400?"3600":"86400",from,to}}
   if(n==="setup/item")return null;
@@ -415,7 +421,7 @@ async function openSite(key,keepChart){
      ${s.status!=="live"?`<span class="chip draft">${esc(t("status.draft"))}</span>`:sevChip(worst||"ok")}<span class="grow"></span>${edit}</div>
    ${s.status!=="live"?`<div class="problems warn">${esc(t("site.draft_note"))}${ST?"":` <button class="btn small" id="liveSite">${esc(t("site.put_live"))}</button>`}</div>`:""}
    ${s.pending.some(p=>p.kind==="site"&&p.key===s.key)?`<div class="problems warn">${esc(t("site.pending"))}</div>`:""}
-   <div class="grid-site"><div>${schematic(s)}
+   <div class="grid-site"><div>${schematic(s)}${/overflow|outfall/.test(s.site_type)?`<div class="panel" id="siteSpills"><h3 style="margin-top:0">${esc(t("sp.site"))}</h3><div class="small muted">${esc(t("m.loading"))}</div></div>`:""}
      <div class="panel" style="margin-top:14px"><h3 style="margin-top:0">${esc(t("site.equipment"))}</h3>${s.components.length?`<table>${s.components.map(c=>`<tr><td>${esc(c.name)}<div class="small muted">${esc(t("ct."+c.type))}${c.install_date?" · "+esc(c.install_date):""}</div></td><td>${c.status!=="live"?`<span class="chip draft">${esc(t("status.draft"))}</span>`:""}${ST?"":`<button class="btn small" data-edit="component:${esc(c.key)}">${esc(t("setup.edit"))}</button>`}</td></tr>`).join("")}</table>`:`<div class="small muted">${esc(t("setup.none"))}</div>`}</div>
      <div class="panel" style="margin-top:14px"><h3 style="margin-top:0">${esc(t("site.alerts"))}</h3>${s.alerts.length?s.alerts.map(a=>alertCard(a,{site:false})).join(""):`<div class="small muted">${esc(t("site.no_alerts"))}</div>`}</div>
    </div><div>
@@ -429,6 +435,9 @@ async function openSite(key,keepChart){
   $$("#v-site tr.pick").forEach(r=>{const go=()=>{CHART.sensor=r.dataset.sensor;$$("#v-site tr.pick").forEach(x=>x.classList.toggle("sel",x===r));drawChart()};r.onclick=go;r.onkeydown=e=>{if(e.key==="Enter")go()}});
   if(!ST){$("#editSite").onclick=()=>editForm("site",s.key);$("#addComp").onclick=()=>newForm("component",{site:s.key});$("#addSens").onclick=()=>newForm("sensor",{site:s.key});
     $("#manual").onclick=()=>manualForm(s);const lv=$("#liveSite");if(lv)lv.onclick=()=>goLive("site",s.key)}
+  if($("#siteSpills"))Promise.all([30,365,0].map(d=>spillReport(d).catch(()=>null))).then(rs=>{const box=$("#siteSpills");if(!box)return;
+    box.innerHTML=`<h3 style="margin-top:0">${esc(t("sp.site"))}</h3><table>${[30,365,0].map((d,i)=>{const row=rs[i]&&rs[i].overflows.find(o=>o.site===s.key);
+      return `<tr><td class="small">${esc(t("sp.p."+d))}</td><td class="small">${row?esc(t("sp.site_line",{spills:row.spills,hours:row.hours,dry:row.dry})):esc(t("sp.site_none"))}</td></tr>`}).join("")}</table>`});
   if(!CHART.sensor&&s.sensors.length)CHART.sensor=(s.sensors.find(x=>x.latest)||s.sensors[0]).key;
   if(CHART.sensor){const r=$(`#v-site tr[data-sensor="${CSS.escape(CHART.sensor)}"]`);if(r)r.classList.add("sel");drawChart()}
 }
@@ -625,6 +634,32 @@ async function showSetup(){
   if($("#exportBtn"))$("#exportBtn").onclick=async()=>{const b=await api("/api/setup/export");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(b,null,1)],{type:"application/json"}));a.download="waterworks-setup.json";a.click()};
 }
 
+/* ---------- spills ---------- */
+let SPILLS={days:30,sort:"spills"};
+async function spillReport(days){
+  let r=await api(`/api/spills?days=${days}${SYS&&!ST?"&system="+encodeURIComponent(SYS):""}`);
+  if(ST&&SYS){const keep=x=>SYS.startsWith("region:")?x.region===SYS.slice(7):x.system===SYS;const rows=r.overflows.filter(keep);
+    r={...r,overflows:rows,totals:{overflows:rows.length,spills:rows.reduce((a,x)=>a+x.spills,0),hours:Math.round(rows.reduce((a,x)=>a+x.hours,0)*10)/10,dry:rows.reduce((a,x)=>a+x.dry,0)}}}
+  return r}
+async function showSpills(){
+  const el=$("#v-spills");el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
+  let r;try{r=await spillReport(SPILLS.days)}catch(e){el.innerHTML=`<div class="empty">${esc(t("m.error",{e:e.message}))}</div>`;return}
+  const key={spills:x=>-x.spills||-x.hours,hours:x=>-x.hours,dry:x=>-x.dry,last:x=>-x.last_start,name:x=>x.name};
+  const rows=r.overflows.slice().sort((a,b)=>{const f=key[SPILLS.sort];const A=f(a),B=f(b);return A<B?-1:A>B?1:(b.hours-a.hours)});
+  const th=(k,label,num)=>`<th class="${num?"num":""}"><button class="sort" data-sort="${k}" aria-pressed="${SPILLS.sort===k}">${esc(t(label))}${SPILLS.sort===k?" ▾":""}</button></th>`;
+  const T=r.totals;
+  el.innerHTML=`<div class="panel"><div class="row"><h2 style="margin:0">${esc(t("sp.title"))}</h2><span class="grow"></span><div class="ranges">${[7,30,365,0].map(d=>`<button class="btn small" data-days="${d}" aria-pressed="${SPILLS.days===d}">${esc(t("sp.p."+d))}</button>`).join("")}</div></div>
+    <div class="counts" style="margin-top:10px"><span class="chip warning">${esc(t("sp.t.overflows",{n:T.overflows}))}</span><span class="chip warning">${esc(t("sp.t.spills",{n:T.spills}))}</span><span class="chip advisory">${esc(t("sp.t.hours",{n:T.hours}))}</span><span class="chip ${T.dry?"critical":"ok"}">${esc(t("sp.t.dry",{n:T.dry}))}</span></div>
+    <p class="small muted" style="max-width:80ch">${esc(t("sp.method"))} ${esc(t("sp.caveat",{date:r.data_from?fmtT(r.data_from*1000,true):"—"}))}${r.complete_from?" "+esc(t("sp.complete",{date:fmtT(r.complete_from*1000,true)})):""}</p>
+    ${rows.length?`<div class="tablewrap"><table><thead><tr>${th("name","sp.c.overflow")}<th>${esc(t("sp.c.water"))}</th>${th("spills","sp.c.spills",1)}${th("hours","sp.c.hours",1)}${th("dry","sp.c.dry",1)}${th("last","sp.c.last")}</tr></thead><tbody>
+      ${rows.map(x=>`<tr class="pick" data-go="${esc(x.site)}" tabindex="0"><td><a href="#site-${esc(x.site)}" data-site-link="${esc(x.site)}">${esc(x.name)}</a></td><td>${esc(x.water)}</td><td class="num">${x.spills}</td><td class="num">${x.hours}</td>
+        <td class="num">${x.dry?`<span class="chip critical">${x.dry}</span>`:x.rain_unknown===x.events?`<span class="small muted">${esc(t("sp.nogauge",{n:x.rain_unknown}))}</span>`:"0"}</td><td class="small">${esc(fmtT(x.last_start*1000,true))} · ${esc(dur(x.last_end-x.last_start))}</td></tr>`).join("")}</tbody></table></div>`
+      :`<div class="empty">${esc(t(r.overflows?"sp.none":"sp.no_overflows"))}</div>`}</div>`;
+  el.querySelectorAll("[data-days]").forEach(b=>b.onclick=()=>{SPILLS.days=+b.dataset.days;showSpills()});
+  el.querySelectorAll("[data-sort]").forEach(b=>b.onclick=()=>{SPILLS.sort=b.dataset.sort;showSpills()});
+  el.querySelectorAll("tr[data-go]").forEach(tr=>{tr.onclick=e=>{e.preventDefault();openSite(tr.dataset.go)};tr.onkeydown=e=>{if(e.key==="Enter")openSite(tr.dataset.go)}});
+}
+
 /* ---------- audit trail ---------- */
 async function showLog(){
   const el=$("#v-log");el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
@@ -636,9 +671,9 @@ async function showLog(){
 
 /* ---------- views and start-up ---------- */
 const hashSite=()=>{const h=decodeURIComponent(location.hash.slice(1));return h.startsWith("site-")?h.slice(5):h.startsWith("site=")?h.slice(5):null};
-function setView(v){VIEW=v;if(v!=="site"&&location.hash)try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}for(const s of ["overview","site","setup","log"])$("#v-"+s).hidden=s!==v;$$("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.view===(v==="site"?"overview":v)?"page":"false"));
+function setView(v){VIEW=v;if(v!=="site"&&location.hash)try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}for(const s of ["overview","site","spills","setup","log"])$("#v-"+s).hidden=s!==v;$$("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.view===(v==="site"?"overview":v)?"page":"false"));
   if(v==="overview"&&map)setTimeout(()=>map.invalidateSize(),50)}
-async function render(){if(VIEW==="overview")await showOverview();else if(VIEW==="site")await openSite(SITE,true);else if(VIEW==="setup")await showSetup();else await showLog()}
+async function render(){if(VIEW==="overview")await showOverview();else if(VIEW==="site")await openSite(SITE,true);else if(VIEW==="spills")await showSpills();else if(VIEW==="setup")await showSetup();else await showLog()}
 async function reloadTree(){TREE=await api("/api/tree");const sel=$("#sysPick");
   sel.innerHTML=(TREE.regions.length>1?"":`<option value="">${esc(t("sys.all"))}</option>`)+TREE.regions.map(r=>`<optgroup label="${esc(r.name)}">${r.systems.length>1||TREE.regions.length>1?`<option value="region:${esc(r.key)}">${esc(t("sys.all_in",{name:r.name}))}</option>`:""}${r.systems.map(s=>`<option value="${esc(s.key)}">${esc(s.name)} · ${esc(t("nt."+s.network_type))}</option>`).join("")}</optgroup>`).join("");
   if(!SYS&&TREE.regions.length>1){const d=CONF.default_system;SYS=d&&[...sel.options].some(o=>o.value===d)?d:"region:"+TREE.regions[0].key}

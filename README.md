@@ -92,12 +92,29 @@ alerts go through ntfy: critical loud, warning quiet.
 
 They are called alerts, never alarms: the utility's SCADA alarms stay in charge.
 
+## Storm overflow spills
+
+The **Spills** page counts each overflow's spills over the last 7 days, 30 days, 12 months or
+all the data, with the 12/24 method used for England's event duration monitoring returns (the
+first 12 hours of discharge is one spill, each following 24-hour block with any discharge is
+one more), the hours discharging, and the receiving water. Each overflow's page shows its own
+totals.
+
+A spill that starts on a dry day raises a **possible dry-day spill** alert (critical). Dry
+follows the Environment Agency's definition: no more than 0.25 mm of rain that day and the 24
+hours before, judged at the nearest three rain gauges within 15 km, all of which must be dry.
+With no gauge close enough, or too few gauge readings, it says it can't tell rather than
+guessing. The EA also uses rainfall radar and allows for drain-down in large catchments, so
+the console flags what to look into; the company's annual return is the official count.
+
 ## The public demo
 
 **London** is real: Thames Water's 573 storm overflow monitors at their real positions with
 their live status (spilling, stopped, offline), and the Environment Agency's rain gauges, over
 OpenStreetMap. Overflows alert when they discharge and when their monitor goes offline; the
-last week is replayed so recent spills are in the history.
+last week is replayed so recent spills are in the history. Stream's feed gives each overflow's
+latest spill only, so the workflow keeps the demo database between runs (`--keep`, with a
+GitHub Actions cache) and the spill history grows from the first run onward.
 
 `tools/build_demo.py` builds it with the same code a real installation runs: it sets London
 up from the two feeds, reads them, replays the last week so recent spills are in the alert
