@@ -51,6 +51,20 @@ On a Debian-based machine (a Raspberry Pi included), `./deploy/install.sh` insta
 Automatic updates are **off** by default; update by hand after reviewing changes with
 `sudo deploy/update.sh --now`.
 
+## Using the console
+
+| Page | For |
+|---|---|
+| **Overview** | The map and the few most serious alerts. Filter the map to what needs attention, what's spilling, what's offline, or one site type. Several sites at one spot show as one marker with a count. |
+| **Alerts** | Every alert, filtered by state (active, not acknowledged, shelved, cleared this week), severity and kind, sorted by any column, and acknowledged or shelved from the list. |
+| **Sites** | Every site in one table: status, latest reading and when it last reported. Sort by *Last data* to find sites that have gone quiet. |
+| **Spills** | Storm overflow spills per overflow, filtered by receiving water or to possible dry-day spills. |
+| **Setup** / **Audit trail** | Setting the network up, and the signed record of who changed what. |
+
+Press `/` to search the page you're on, or to find any site by name or key from the box at the
+top. Each list downloads as a CSV of what it shows, and remembers its filters, so the page you
+come back to is the one you left.
+
 ## Setting up the network
 
 Everything can be set up one item at a time through `POST /api/setup` (the M1 setup screens

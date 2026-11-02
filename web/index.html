@@ -47,8 +47,8 @@ h3{font-size:14px;margin:14px 0 6px;font-weight:650;color:var(--muted);text-tran
 header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
 header.top .brand{display:flex;align-items:center;gap:10px}
 header.top .brand svg{flex:none}
-nav.tabs{display:flex;gap:4px}
-nav.tabs button{border:0;background:none;padding:7px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
+nav.tabs{display:flex;gap:4px;max-width:100%;overflow-x:auto;scrollbar-width:none}nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{white-space:nowrap;flex:none;border:0;background:none;padding:7px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
 nav.tabs button[aria-current="page"]{background:var(--accent-bg);color:var(--accent)}
 .grow{flex:1}
 .who{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -127,6 +127,17 @@ dialog .dlg-head{display:flex;justify-content:space-between;align-items:center;m
 .sketch svg{width:100%;max-width:300px;height:auto}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;max-width:90vw;z-index:2000;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .empty{padding:20px;text-align:center;color:var(--muted)}
+.filters{margin:4px 0 12px}.filters input[type=search]{flex:1 1 220px;min-width:0;max-width:340px}.filters select{max-width:100%}
+table.list td.what{min-width:260px;max-width:560px}
+.find{position:relative;flex:0 1 280px;min-width:180px}.find input{width:100%}
+#findList{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:1500;padding:4px;max-height:60vh;overflow:auto}
+#findList button{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:7px;cursor:pointer}
+#findList button[aria-selected="true"],#findList button:hover{background:var(--accent-bg)}
+.stack{position:relative;width:24px;height:24px}.stack b{position:absolute;right:-7px;top:-7px;background:var(--ink);color:var(--bg);border-radius:9px;font-size:10px;line-height:1;padding:2px 4px;font-weight:700}
+.here{list-style:none;margin:0;padding:0;max-height:240px;overflow:auto}.here li{margin:2px 0}.here button{all:unset;cursor:pointer;color:var(--accent);display:flex;gap:6px;align-items:center}
+.here button:hover{text-decoration:underline}
+details.sys>summary{cursor:pointer;color:var(--muted);font-size:13px;margin:4px 0}
+.more-link{margin-top:6px}
 .foot{margin-top:18px;font-size:12px;color:var(--muted)}
 </style>
 </head>
@@ -140,11 +151,14 @@ dialog .dlg-head{display:flex;justify-content:space-between;align-items:center;m
   </div>
   <nav class="tabs" aria-label="Views">
     <button data-view="overview" data-t="nav.overview"></button>
+    <button data-view="alerts" data-t="nav.alerts"></button>
+    <button data-view="sites" data-t="nav.sites"></button>
     <button data-view="spills" data-t="nav.spills"></button>
     <button data-view="setup" data-t="nav.setup"></button>
     <button data-view="log" data-t="nav.log"></button>
   </nav>
   <label class="row small"><span data-t="sys.pick"></span> <select id="sysPick" aria-label="System"></select></label>
+  <div class="find"><input id="find" type="search" autocomplete="off" role="combobox" aria-controls="findList" aria-expanded="false"><div id="findList" role="listbox" hidden></div></div>
   <span class="grow"></span>
   <span id="clock" class="small muted"></span>
   <div class="who">
@@ -158,24 +172,25 @@ dialog .dlg-head{display:flex;justify-content:space-between;align-items:center;m
   <section id="v-overview" hidden>
     <div class="grid-ov">
       <div class="panel">
+        <div class="filters row"><input type="search" id="mapQ" aria-label="Search"><select id="mapShow" aria-label="Show"></select><select id="mapType" aria-label="Site type"></select><span class="grow"></span><span class="small muted" id="mapCount" aria-live="polite"></span></div>
         <div id="map" role="application" aria-label="Map of sites"></div>
         <div class="legend" id="legend"></div>
         <div class="small muted" id="rain24"></div>
       </div>
       <div>
         <div class="panel">
-          <div class="row"><h2 data-t="ov.alerts"></h2><span class="grow"></span>
-            <label class="small row"><input type="checkbox" id="showShelved"> <span data-t="ov.show_shelved"></span></label></div>
+          <div class="row"><h2 data-t="ov.alerts"></h2><span class="grow"></span><button class="btn small" id="allAlerts"></button></div>
           <div class="counts" id="counts"></div>
           <div id="alerts"></div>
-          <h3 data-t="ov.recent"></h3>
-          <div id="recent"></div>
+          <details><summary class="small muted" id="recentHead"></summary><div id="recent" style="margin-top:8px"></div></details>
         </div>
       </div>
     </div>
   </section>
 
   <section id="v-site" hidden></section>
+  <section id="v-alerts" hidden></section>
+  <section id="v-sites" hidden></section>
   <section id="v-spills" hidden></section>
   <section id="v-setup" hidden></section>
   <section id="v-log" hidden></section>
@@ -196,7 +211,7 @@ const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const ST=window.WWD_STATIC||null;
 const prefs=lsGet("wwd.prefs",{});
 let LANG=prefs.lang||null, I18N={}, I18N_EN={}, CONF=null, TREE=null, SYS=prefs.sys||"", VIEW="overview", SITE=null;
-let MAPDATA=null, ALERTS=[], RECENT=[], map=null, markers=null, lines=null, CHART={sensor:null,range:"7d"}, SITEDATA=null;
+let PREV="overview", MAPDATA=null, ALERTS=[], RECENT=[], map=null, markers=null, lines=null, CHART={sensor:null,range:"7d"}, SITEDATA=null;
 
 /* ---------- words ---------- */
 function t(k,p){let s=I18N[k]??I18N_EN[k]??k;if(p)s=s.replace(/\{(\w+)\}/g,(m,n)=>p[n]!=null?p[n]:m);return s}
@@ -289,10 +304,11 @@ document.addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;
   try{
     if(b.dataset.site){openSite(b.dataset.site);return}
-    if(b.dataset.ack){const note=prompt(t("al.note"))??null;if(note===null)return;await post("/api/alerts/ack",{id:+b.dataset.ack,note});await refreshAlerts();if(VIEW==="site")openSite(SITE,true)}
+    const again=async()=>{if(VIEW==="alerts")await showAlerts();else if(VIEW==="site")await openSite(SITE,true);else await refreshAlerts()};
+    if(b.dataset.ack){const note=prompt(t("al.note"))??null;if(note===null)return;await post("/api/alerts/ack",{id:+b.dataset.ack,note});await again()}
     if(b.dataset.shelve){const h=prompt(t("al.hours"),"4");if(h==null)return;const reason=prompt(t("al.reason"));if(reason==null)return;
-      await post("/api/alerts/shelve",{id:+b.dataset.shelve,hours:+h,reason});await refreshAlerts()}
-    if(b.dataset.unshelve){await post("/api/alerts/unshelve",{id:+b.dataset.unshelve});await refreshAlerts()}
+      await post("/api/alerts/shelve",{id:+b.dataset.shelve,hours:+h,reason});await again()}
+    if(b.dataset.unshelve){await post("/api/alerts/unshelve",{id:+b.dataset.unshelve});await again()}
   }catch(err){if(err.message!=="name")toast(t("m.error",{e:err.message}))}
 });
 
@@ -327,8 +343,12 @@ function ensureMap(){
   L.control.scale({imperial:false}).addTo(map);
   lines=L.layerGroup().addTo(map);markers=L.layerGroup().addTo(map);
 }
+function mapShown(){const st=fl("map",{q:"",show:"",type:""});
+  return MAPDATA.sites.filter(s=>hit(st.q,s.name,s.key,t("st."+s.site_type))&&showMatch(s,st.show)&&(!st.type||s.site_type===st.type))}
 function drawMap(){
   ensureMap();markers.clearLayers();lines.clearLayers();const pts=[];
+  const shown=mapShown();$("#mapCount").textContent=t("fl.showing",{n:shown.length,total:MAPDATA.sites.length});
+  const groups=new Map();for(const s of shown){const k=s.lat.toFixed(4)+","+s.lon.toFixed(4);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(s)}
   const streets=!!map._tiles&&MAPDATA.sites.length>0&&MAPDATA.sites.every(s=>s.basemap!==false);
   if(streets&&!map.hasLayer(map._tiles))map._tiles.addTo(map);if(!streets&&map._tiles&&map.hasLayer(map._tiles))map.removeLayer(map._tiles);
   $("#map").classList.toggle("blank",!streets);if(map._wwdNote){map.attributionControl.removeAttribution(map._wwdNote);map._wwdNote=null}
@@ -336,7 +356,14 @@ function drawMap(){
   const labelled=new Set(MAPDATA.sites.length<=80?MAPDATA.sites.filter(s=>s.criticality===1&&s.site_type!=="pressure_logger").map(s=>s.key):[]);
   for(const l of MAPDATA.layers||[]){L.geoJSON(l.geojson,{interactive:false,style:f=>{const d=(f.properties||{}).diameter_mm;
     return {className:l.kind==="boundary"?"wwd-boundary":"wwd-pipe",weight:d?Math.max(1,Math.min(5,d/80)):2}}}).addTo(lines)}
-  for(const s of MAPDATA.sites){
+  for(const g of groups.values()){if(g.length<2)continue;
+    g.sort((a,b)=>RANK[siteState(a)]-RANK[siteState(b)]);const top=g[0],sev=RANK[siteState(top)]<3?siteState(top):null;
+    const icon=L.divIcon({className:"site-icon",html:`<div class="stack">${sev?markerSVG(sev):typeSVG(top.site_type,top.status!=="live")}<b>${g.length}</b></div>`,iconSize:[24,24],iconAnchor:[12,12]});
+    const m=L.marker([top.lat,top.lon],{icon,title:t("ov.here",{n:g.length}),keyboard:true,riseOnHover:true,zIndexOffset:{critical:900,warning:600,advisory:300}[sev]||0});
+    m.bindPopup(`<strong>${esc(t("ov.here",{n:g.length}))}</strong><ul class="here">${g.map(s=>`<li><button data-site="${esc(s.key)}">${RANK[siteState(s)]<3?SEV_ICON[siteState(s)]:""}${esc(s.name)}</button></li>`).join("")}</ul>`);
+    m.bindTooltip(esc(t("ov.here",{n:g.length})));markers.addLayer(m);pts.push([top.lat,top.lon])}
+  for(const s of shown){
+    if(groups.get(s.lat.toFixed(4)+","+s.lon.toFixed(4)).length>1)continue;
     const draft=s.status!=="live";const icon=L.divIcon({className:"site-icon",html:s.worst&&!draft?markerSVG(s.worst):typeSVG(s.site_type,draft),iconSize:[24,24],iconAnchor:[12,12]});
     const m=L.marker([s.lat,s.lon],{icon,title:s.name,keyboard:true,riseOnHover:true,zIndexOffset:{critical:900,warning:600,advisory:300}[s.worst]||0});
     const reading=s.readings.find(r=>r.value!=null);
@@ -361,21 +388,30 @@ async function drawRain(){
 }
 
 /* ---------- overview ---------- */
+const TOP=6;
 async function refreshAlerts(){
-  const sys=SYS?"system="+encodeURIComponent(SYS)+"&":"";
-  const all=await api(`/api/alerts?${sys}ended_hours=24${$("#showShelved").checked?"&shelved=1":""}`);
-  let list=all;if(ST){list=all.filter(a=>!SYS||!a.system||(SYS.startsWith("region:")?a.region===SYS.slice(7):a.system===SYS))}
-  ALERTS=list.filter(a=>a.end_ms==null&&($("#showShelved").checked||!(a.shelved_until_ms>Date.now())));
-  RECENT=list.filter(a=>a.end_ms!=null&&a.end_ms>CONF.clock_ms-86400e3);
+  const list=await alertsList(24);
+  ALERTS=list.filter(a=>a.end_ms==null&&!shelvedNow(a)).sort((a,b)=>RANK[a.severity]-RANK[b.severity]||b.start_ms-a.start_ms);
+  RECENT=list.filter(a=>a.end_ms!=null&&a.end_ms>CONF.clock_ms-86400e3).sort((a,b)=>b.end_ms-a.end_ms);
   const n=s=>ALERTS.filter(a=>a.severity===s).length;
-  $("#counts").innerHTML=["critical","warning","advisory"].map(s=>`<span class="chip ${s}">${SEV_ICON[s]}${n(s)} ${esc(t("sev."+s))}</span>`).join("");
-  $("#alerts").innerHTML=ALERTS.length?ALERTS.map(a=>alertCard(a)).join(""):`<div class="empty">${SEV_ICON.ok} ${esc(t("ov.none"))}</div>`;
+  $("#counts").innerHTML=["critical","warning","advisory"].map(s=>`<button class="chip ${s}" data-sev="${s}" title="${esc(t("ov.see_sev",{sev:t("sev."+s)}))}" style="cursor:pointer">${SEV_ICON[s]}${n(s)} ${esc(t("sev."+s))}</button>`).join("");
+  $("#counts").querySelectorAll("[data-sev]").forEach(b=>b.onclick=()=>goAlerts(b.dataset.sev));
+  $("#allAlerts").textContent=t("ov.see_all",{n:ALERTS.length});$("#allAlerts").onclick=()=>goAlerts("");
+  $("#alerts").innerHTML=ALERTS.length?ALERTS.slice(0,TOP).map(a=>alertCard(a)).join("")+(ALERTS.length>TOP?`<button class="btn small more-link" id="moreAlerts">${esc(t("ov.more_alerts",{n:ALERTS.length-TOP}))}</button>`:"")
+    :`<div class="empty">${SEV_ICON.ok} ${esc(t("ov.none"))}</div>`;
+  if($("#moreAlerts"))$("#moreAlerts").onclick=()=>goAlerts("");
+  $("#recentHead").textContent=t("ov.recent_n",{n:RECENT.length});
   $("#recent").innerHTML=RECENT.length?RECENT.slice(0,20).map(a=>alertCard(a)).join(""):`<div class="small muted">${esc(t("setup.none"))}</div>`;
 }
 async function showOverview(){
-  MAPDATA=await api("/api/map"+(SYS&&!ST?"?system="+encodeURIComponent(SYS):""));
-  const pick=x=>!SYS||(SYS.startsWith("region:")?x.region===SYS.slice(7):x.system===SYS);
-  if(ST&&SYS)MAPDATA={sites:MAPDATA.sites.filter(pick),layers:(MAPDATA.layers||[]).filter(pick)};
+  await loadSites();const st=fl("map",{q:"",show:"",type:""});
+  const types=[...new Set(MAPDATA.sites.map(s=>s.site_type))].sort((a,b)=>t("st."+a).localeCompare(t("st."+b)));
+  if(st.type&&!types.includes(st.type))st.type="";
+  $("#mapQ").value=st.q;$("#mapQ").placeholder=t("ov.find_map");
+  $("#mapShow").innerHTML=showOpts().map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("");$("#mapShow").value=st.show;
+  $("#mapType").innerHTML=[["",t("fl.any_type")],...types.map(k=>[k,t("st."+k)])].map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("");$("#mapType").value=st.type;
+  let tm;$("#mapQ").oninput=e=>{st.q=e.target.value;flSave();clearTimeout(tm);tm=setTimeout(drawMap,180)};
+  $("#mapShow").onchange=e=>{st.show=e.target.value;flSave();drawMap()};$("#mapType").onchange=e=>{st.type=e.target.value;flSave();drawMap()};
   drawMap();drawLegend();await refreshAlerts();drawRain();
   if(!MAPDATA.sites.length)$("#alerts").innerHTML=`<div class="empty">${esc(t("ov.no_sites"))}</div>`;
 }
@@ -410,7 +446,7 @@ function limitText(x){if(x.quantity==="state")return "—";const L=x.limits;cons
   const rng=`${L.warn_lo!=null?show(x,L.warn_lo):"…"} – ${L.warn_hi!=null?show(x,L.warn_hi):"…"}`;
   return `${esc(t(out?"site.outside":"site.inside"))} <span class="muted">(${esc(rng)})</span>`}
 async function openSite(key,keepChart){
-  SITE=key;setView("site");const el=$("#v-site");if(!keepChart)CHART.sensor=null;
+  SITE=key;if(VIEW!=="site")PREV=VIEW;setView("site");const el=$("#v-site");if(!keepChart)CHART.sensor=null;
   try{if(location.hash!=="#site-"+key)history.replaceState(null,"","#site-"+key)}catch(e){}
   el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
   let s;try{s=await api("/api/sites/"+encodeURIComponent(key))}catch(e){el.innerHTML=`<div class="empty">${esc(t("m.error",{e:e.message}))}</div>`;return}
@@ -431,7 +467,7 @@ async function openSite(key,keepChart){
         <td class="small">${limitText(x)}${ST?"":`<div><button class="btn small" data-edit="sensor:${esc(x.key)}">${esc(t("setup.edit"))}</button></div>`}</td></tr>`).join("")}</tbody></table></div>
      <div class="panel chart" style="margin-top:14px" id="chartBox"><div class="small muted">${esc(t("site.chart_hint"))}</div></div>
    </div></div>`;
-  $("#back").onclick=()=>{setView("overview");showOverview()};
+  $("#back").onclick=()=>{setView(PREV||"overview");render()};
   $$("#v-site tr.pick").forEach(r=>{const go=()=>{CHART.sensor=r.dataset.sensor;$$("#v-site tr.pick").forEach(x=>x.classList.toggle("sel",x===r));drawChart()};r.onclick=go;r.onkeydown=e=>{if(e.key==="Enter")go()}});
   if(!ST){$("#editSite").onclick=()=>editForm("site",s.key);$("#addComp").onclick=()=>newForm("component",{site:s.key});$("#addSens").onclick=()=>newForm("sensor",{site:s.key});
     $("#manual").onclick=()=>manualForm(s);const lv=$("#liveSite");if(lv)lv.onclick=()=>goLive("site",s.key)}
@@ -612,16 +648,19 @@ async function showSetup(){
   const tree=TREE.regions.length?`<ul>${TREE.regions.map(r=>`<li><strong>${esc(r.name)}</strong> <span class="small muted">${esc(r.timezone)}${r.datum?" · "+esc(r.datum):""}</span> ${ST?"":`<button class="btn small" data-edit="region:${esc(r.key)}">${esc(t("setup.edit"))}</button>`}
       <ul>${r.systems.map(s=>`<li>${chip(s.status)} <strong>${esc(s.name)}</strong> <span class="small muted">${esc(t("nt."+s.network_type))} · ${esc(t("setup.sites_count",{n:s.sites,s:s.sensors}))}</span>
         ${ST?"":`<button class="btn small" data-edit="system:${esc(s.key)}">${esc(t("setup.edit"))}</button>${s.status!=="live"?`<button class="btn small primary" data-live="system:${esc(s.key)}">${esc(t("setup.go_live"))}</button>`:""}<button class="btn small" data-new="site" data-sys="${esc(s.key)}">${esc(t("setup.add.site"))}</button>`}
-        <ul>${sysSites.sites.filter(x=>x.system===s.key).map(x=>`<li>${chip(x.status==="live"?"live":"draft")} <a href="#" data-site="${esc(x.key)}">${esc(x.name)}</a> <span class="small muted">${esc(t("st."+x.site_type))}</span>
-          ${!ST&&x.status!=="live"&&s.status==="live"?`<button class="btn small primary" data-live="site:${esc(x.key)}">${esc(t("setup.go_live"))}</button>`:""}</li>`).join("")}</ul></li>`).join("")}</ul></li>`).join("")}</ul>`:`<p>${esc(t("setup.empty"))}</p>`;
+        <details class="sys"${s.sites<=25?" open":""}><summary>${esc(t("setup.sites_count",{n:s.sites,s:s.sensors}))}</summary><ul>${sysSites.sites.filter(x=>x.system===s.key).map(x=>`<li data-name="${esc(x.name+" "+x.key+" "+t("st."+x.site_type))}">${chip(x.status==="live"?"live":"draft")} <a href="#" data-site="${esc(x.key)}">${esc(x.name)}</a> <span class="small muted">${esc(t("st."+x.site_type))}</span>
+          ${!ST&&x.status!=="live"&&s.status==="live"?`<button class="btn small primary" data-live="site:${esc(x.key)}">${esc(t("setup.go_live"))}</button>`:""}</li>`).join("")}</ul></details></li>`).join("")}</ul></li>`).join("")}</ul>`:`<p>${esc(t("setup.empty"))}</p>`;
   const um=Object.entries(unmapped).flatMap(([src,tags])=>Object.entries(tags).map(([tag,info])=>({src,tag,info})));
   el.innerHTML=`<div class="grid-ov"><div class="panel"><h2>${esc(t("setup.title"))}</h2><p class="small muted">${esc(t("setup.intro"))}</p>
-      <div class="row" style="margin-bottom:10px">${add("region")}${add("system")}${add("site")}</div><div class="tree">${tree}</div></div>
+      <div class="row" style="margin-bottom:10px">${add("region")}${add("system")}${add("site")}</div>
+      <div class="filters row"><input type="search" id="treeQ" data-q placeholder="${esc(t("setup.filter"))}" aria-label="${esc(t("setup.filter"))}"></div><div class="tree">${tree}</div></div>
     <div><div class="panel"><h2>${esc(t("setup.pending"))}</h2>${pending.length?pending.map(p=>`<div class="alert"><strong>${esc(p.name)}</strong> <span class="small muted">${esc(p.kind)} · ${esc(t("setup.proposed_by",{who:p.by}))} · ${esc(fmtT(p.t_ms,true))}</span>
         <div class="small mono">${esc(Object.entries(p.change).filter(([k])=>k!=="key").map(([k,v])=>k+" → "+(typeof v==="object"?JSON.stringify(v):v)).join("; "))}</div>
         <div class="acts" style="margin-top:6px"><button class="btn small primary" data-apply="${esc(p.kind)}:${esc(p.key)}">${esc(t("setup.apply"))}</button><button class="btn small" data-discard="${esc(p.kind)}:${esc(p.key)}">${esc(t("setup.discard"))}</button></div></div>`).join(""):`<div class="small muted">${esc(t("setup.none"))}</div>`}</div>
       <div class="panel" style="margin-top:14px"><h2>${esc(t("setup.unmapped"))}</h2>${um.length?`<table>${um.slice(0,50).map(u=>`<tr><td class="mono">${esc(u.tag)}<div class="small muted">${esc(u.src)} · ${u.info.count}×</div></td><td>${ST?"":`<button class="btn small" data-tag="${esc(u.src)}|${esc(u.tag)}">${esc(t("setup.add_for_tag",{tag:u.tag}))}</button>`}</td></tr>`).join("")}</table>`:`<div class="small muted">${esc(t("setup.none"))}</div>`}</div>
       <div class="panel" style="margin-top:14px"><div class="row">${ST?"":`<label class="btn">${esc(t("setup.import"))}<input type="file" id="importFile" accept=".json,application/json" hidden></label>`}${ST?"":`<button class="btn" id="exportBtn">${esc(t("setup.export"))}</button>`}</div></div></div></div>`;
+  $("#treeQ").oninput=e=>{const q=e.target.value.trim();el.querySelectorAll(".tree li[data-name]").forEach(li=>li.hidden=!hit(q,li.dataset.name));
+    el.querySelectorAll("details.sys").forEach(d=>{if(q)d.open=[...d.querySelectorAll("li[data-name]")].some(li=>!li.hidden)})};
   el.querySelectorAll("[data-new]").forEach(b=>b.onclick=()=>newForm(b.dataset.new,b.dataset.sys?{system:b.dataset.sys}:null));
   el.querySelectorAll("[data-live]").forEach(b=>b.onclick=()=>{const [k,key]=b.dataset.live.split(":");goLive(k,key)});
   el.querySelectorAll("a[data-site]").forEach(a=>a.onclick=e=>{e.preventDefault();openSite(a.dataset.site)});
@@ -644,36 +683,177 @@ async function spillReport(days){
 async function showSpills(){
   const el=$("#v-spills");el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
   let r;try{r=await spillReport(SPILLS.days)}catch(e){el.innerHTML=`<div class="empty">${esc(t("m.error",{e:e.message}))}</div>`;return}
-  const key={spills:x=>-x.spills||-x.hours,hours:x=>-x.hours,dry:x=>-x.dry,last:x=>-x.last_start,name:x=>x.name};
-  const rows=r.overflows.slice().sort((a,b)=>{const f=key[SPILLS.sort];const A=f(a),B=f(b);return A<B?-1:A>B?1:(b.hours-a.hours)});
-  const th=(k,label,num)=>`<th class="${num?"num":""}"><button class="sort" data-sort="${k}" aria-pressed="${SPILLS.sort===k}">${esc(t(label))}${SPILLS.sort===k?" ▾":""}</button></th>`;
+  const st=fl("spills",{q:"",dry:false,water:"",sort:"spills",desc:true});
+  const waters=[...new Set(r.overflows.map(x=>x.water).filter(Boolean))].sort();if(st.water&&!waters.includes(st.water))st.water="";
   const T=r.totals;
-  el.innerHTML=`<div class="panel"><div class="row"><h2 style="margin:0">${esc(t("sp.title"))}</h2><span class="grow"></span><div class="ranges">${[7,30,365,0].map(d=>`<button class="btn small" data-days="${d}" aria-pressed="${SPILLS.days===d}">${esc(t("sp.p."+d))}</button>`).join("")}</div></div>
+  const cols=[
+    {k:"name",label:t("sp.c.overflow"),get:x=>x.name,html:x=>`<a href="#site-${esc(x.site)}">${esc(x.name)}</a>`},
+    {k:"water",label:t("sp.c.water"),get:x=>x.water},
+    {k:"spills",label:t("sp.c.spills"),get:x=>x.spills,sort:x=>x.spills*1e6+x.hours,num:true,desc:true},
+    {k:"hours",label:t("sp.c.hours"),get:x=>x.hours,num:true,desc:true},
+    {k:"dry",label:t("sp.c.dry"),get:x=>x.dry,csv:x=>x.rain_unknown===x.events&&!x.dry?"":x.dry,sort:x=>x.dry*1e3-(x.rain_unknown===x.events?1:0),num:true,desc:true,
+      html:x=>x.dry?`<span class="chip critical">${x.dry}</span>`:x.rain_unknown===x.events?`<span class="small muted">${esc(t("sp.nogauge",{n:x.rain_unknown}))}</span>`:"0"},
+    {k:"last",label:t("sp.c.last"),get:x=>fmtT(x.last_start*1000,true),sort:x=>x.last_start,desc:true,html:x=>`${esc(fmtT(x.last_start*1000,true))} · ${esc(dur(x.last_end-x.last_start))}`,cls:"small"}];
+  listView(el,{view:"spills",st,cols,rows:r.overflows,go:x=>x.site,csvName:`spills-${SPILLS.days||"all"}d`,empty:t(r.overflows?"sp.none":"sp.no_overflows"),
+    head:`<div class="row"><h2 style="margin:0">${esc(t("sp.title"))}</h2><span class="grow"></span><div class="ranges">${[7,30,365,0].map(d=>`<button class="btn small" data-days="${d}" aria-pressed="${SPILLS.days===d}">${esc(t("sp.p."+d))}</button>`).join("")}</div></div>
     <div class="counts" style="margin-top:10px"><span class="chip warning">${esc(t("sp.t.overflows",{n:T.overflows}))}</span><span class="chip warning">${esc(t("sp.t.spills",{n:T.spills}))}</span><span class="chip advisory">${esc(t("sp.t.hours",{n:T.hours}))}</span><span class="chip ${T.dry?"critical":"ok"}">${esc(t("sp.t.dry",{n:T.dry}))}</span></div>
-    <p class="small muted" style="max-width:80ch">${esc(t("sp.method"))} ${esc(t("sp.caveat",{date:r.data_from?fmtT(r.data_from*1000,true):"—"}))}${r.complete_from?" "+esc(t("sp.complete",{date:fmtT(r.complete_from*1000,true)})):""}</p>
-    ${rows.length?`<div class="tablewrap"><table><thead><tr>${th("name","sp.c.overflow")}<th>${esc(t("sp.c.water"))}</th>${th("spills","sp.c.spills",1)}${th("hours","sp.c.hours",1)}${th("dry","sp.c.dry",1)}${th("last","sp.c.last")}</tr></thead><tbody>
-      ${rows.map(x=>`<tr class="pick" data-go="${esc(x.site)}" tabindex="0"><td><a href="#site-${esc(x.site)}" data-site-link="${esc(x.site)}">${esc(x.name)}</a></td><td>${esc(x.water)}</td><td class="num">${x.spills}</td><td class="num">${x.hours}</td>
-        <td class="num">${x.dry?`<span class="chip critical">${x.dry}</span>`:x.rain_unknown===x.events?`<span class="small muted">${esc(t("sp.nogauge",{n:x.rain_unknown}))}</span>`:"0"}</td><td class="small">${esc(fmtT(x.last_start*1000,true))} · ${esc(dur(x.last_end-x.last_start))}</td></tr>`).join("")}</tbody></table></div>`
-      :`<div class="empty">${esc(t(r.overflows?"sp.none":"sp.no_overflows"))}</div>`}</div>`;
+    <details class="small muted" style="margin-bottom:8px"><summary>${esc(t("sp.how"))}</summary><p style="max-width:80ch">${esc(t("sp.method"))} ${esc(t("sp.caveat",{date:r.data_from?fmtT(r.data_from*1000,true):"—"}))}${r.complete_from?" "+esc(t("sp.complete",{date:fmtT(r.complete_from*1000,true)})):""}</p></details>`,
+    controls:(waters.length>1?selF("water",st,[["",t("sp.any_water")],...waters.map(w=>[w,w])]):"")+chkF("dry",st,t("sp.dry_only")),
+    filter:(x,st)=>hit(st.q,x.name,x.site,x.water)&&(!st.water||x.water===st.water)&&(!st.dry||x.dry>0)});
   el.querySelectorAll("[data-days]").forEach(b=>b.onclick=()=>{SPILLS.days=+b.dataset.days;showSpills()});
-  el.querySelectorAll("[data-sort]").forEach(b=>b.onclick=()=>{SPILLS.sort=b.dataset.sort;showSpills()});
-  el.querySelectorAll("tr[data-go]").forEach(tr=>{tr.onclick=e=>{e.preventDefault();openSite(tr.dataset.go)};tr.onkeydown=e=>{if(e.key==="Enter")openSite(tr.dataset.go)}});
 }
 
 /* ---------- audit trail ---------- */
 async function showLog(){
   const el=$("#v-log");el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
   const [log,v]=await Promise.all([api("/api/log"),api("/api/log/verify")]);
-  el.innerHTML=`<div class="panel"><h2>${esc(t("log.title"))}</h2><p>${v.ok?`<span class="chip ok">✓ ${esc(t("log.ok",{n:v.entries}))}</span>`:`<span class="chip critical">${esc(t("log.broken",{seq:v.problems[0].seq,problem:v.problems[0].problem}))}</span>`}</p>
-    <table><thead><tr><th>${esc(t("log.when"))}</th><th>${esc(t("log.who"))}</th><th>${esc(t("log.what"))}</th></tr></thead><tbody>
-    ${log.slice().reverse().slice(0,500).map(e=>`<tr><td class="small mono">${esc(fmtT(e.t,true))}</td><td>${esc(e.actor)}</td><td>${esc(e.msg)}<div class="small muted mono">#${e.seq} · ${esc(e.kind)} · ${esc(e.hash.slice(0,12))}</div></td></tr>`).join("")}</tbody></table></div>`;
+  const st=fl("log",{q:"",kind:"",who:"",sort:"when",desc:true});
+  const kinds=[...new Set(log.map(e=>e.kind))].sort(),who=[...new Set(log.map(e=>e.actor))].sort();
+  const cols=[
+    {k:"when",label:t("log.when"),get:e=>fmtT(e.t,true),sort:e=>e.seq,desc:true,cls:"small mono"},
+    {k:"who",label:t("log.who"),get:e=>e.actor},
+    {k:"what",label:t("log.what"),get:e=>e.msg,nosort:true,html:e=>`${esc(e.msg)}<div class="small muted mono">#${e.seq} · ${esc(e.kind)} · ${esc(e.hash.slice(0,12))}</div>`},
+    {k:"kind",label:t("log.kind"),get:e=>e.kind,cls:"small mono"},
+    {k:"hash",label:"SHA-256",get:e=>e.hash,nosort:true,cls:"small mono",html:e=>esc(e.hash.slice(0,12))+"…"}];
+  listView(el,{view:"log",st,cols,rows:log,csvName:"audit-trail",
+    head:`<h2>${esc(t("log.title"))}</h2><p>${v.ok?`<span class="chip ok">✓ ${esc(t("log.ok",{n:v.entries}))}</span>`:`<span class="chip critical">${esc(t("log.broken",{seq:v.problems[0].seq,problem:v.problems[0].problem}))}</span>`}</p>`,
+    controls:selF("kind",st,[["",t("log.any_kind")],...kinds.map(k=>[k,k])])+(who.length>1?selF("who",st,[["",t("log.anyone")],...who.map(k=>[k,k])]):""),
+    filter:(e,st)=>hit(st.q,e.msg,e.actor,e.kind,e.seq)&&(!st.kind||e.kind===st.kind)&&(!st.who||e.actor===st.who)});
+}
+
+/* ---------- lists: search, filters, sorting, CSV ---------- */
+const FL=lsGet("wwd.filters",{});
+function fl(view,defaults){const o=FL[view]||(FL[view]={});for(const [k,v] of Object.entries(defaults))if(!(k in o))o[k]=v;o._d=defaults;return o}
+function flSave(){const o={};for(const [k,v] of Object.entries(FL)){const {_d,...rest}=v;o[k]=rest}lsSet("wwd.filters",o)}
+const fold=s=>String(s??"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d");
+const hit=(q,...f)=>{if(!q)return true;const h=fold(f.join(" "));return fold(q).split(/\s+/).filter(Boolean).every(w=>h.includes(w))};
+const selF=(f,st,opts)=>`<select data-f="${f}" aria-label="${esc(opts[0][1])}">${opts.map(([v,l])=>`<option value="${esc(v)}"${String(st[f])===String(v)?" selected":""}>${esc(l)}</option>`).join("")}</select>`;
+const chkF=(f,st,label)=>`<label class="small row"><input type="checkbox" data-f="${f}"${st[f]?" checked":""}> ${esc(label)}</label>`;
+function sortRows(rows,cols,st){const c=cols.find(c=>c.k===st.sort)||cols[0],f=c.sort||c.get,d=st.desc?-1:1;
+  return rows.map((x,i)=>[x,f(x),i]).sort((a,b)=>{const A=a[1],B=b[1];if(A==null||A==="")return B==null||B===""?a[2]-b[2]:1;if(B==null||B==="")return -1;return (A<B?-1:A>B?1:a[2]-b[2])*d}).map(r=>r[0])}
+function downloadCSV(name,cols,rows){const q=v=>{v=String(v??"");return /[",\n;]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
+  const txt=[cols.map(c=>q(c.label)).join(","),...rows.map(x=>cols.map(c=>q(c.csv?c.csv(x):c.get(x))).join(","))].join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+txt],{type:"text/csv"}));a.download=name+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+/* A filterable, sortable table. Draws the bar once and redraws only the rows, so typing in the
+   search box keeps its focus. */
+function listView(el,{view,head="",cols,rows,st,controls="",filter,go,csvName,empty,page=300}){
+  const filtered=()=>Object.keys(st._d).some(k=>k!=="sort"&&k!=="desc"&&String(st[k])!==String(st._d[k]));
+  el.innerHTML=`<div class="panel">${head}<div class="filters row"><input type="search" data-q value="${esc(st.q||"")}" placeholder="${esc(t("fl.search"))}" aria-label="${esc(t("fl.search"))}">${controls}
+    <span class="grow"></span><span class="small muted" data-count aria-live="polite"></span><button class="btn small" data-clear hidden>${esc(t("fl.clear"))}</button><button class="btn small" data-csv>${esc(t("fl.export"))}</button></div><div data-body></div></div>`;
+  const body=el.querySelector("[data-body]");let shown=[],lim=page;
+  function draw(){shown=sortRows(rows.filter(x=>filter(x,st)),cols,st);
+    el.querySelector("[data-count]").textContent=t("fl.showing",{n:shown.length,total:rows.length});
+    el.querySelector("[data-clear]").hidden=!filtered();
+    body.innerHTML=shown.length?`<div class="tablewrap"><table class="list"><thead><tr>${cols.map(c=>`<th class="${c.num?"num":""}"${st.sort===c.k?` aria-sort="${st.desc?"descending":"ascending"}"`:""}>${c.nosort?esc(c.label):`<button class="sort" data-sort="${c.k}">${esc(c.label)}${st.sort===c.k?(st.desc?" ▾":" ▴"):""}</button>`}</th>`).join("")}</tr></thead>
+      <tbody>${shown.slice(0,lim).map(x=>`<tr${go&&go(x)?` class="pick" data-go="${esc(go(x))}" tabindex="0"`:""}>${cols.map(c=>`<td class="${c.num?"num":""}${c.cls?" "+c.cls:""}">${c.html?c.html(x):esc(c.get(x)??"—")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+      ${shown.length>lim?`<div class="row" style="justify-content:center;margin-top:10px"><button class="btn small" data-more>${esc(t("fl.more",{n:shown.length-lim}))}</button></div>`:""}`
+      :`<div class="empty">${esc(filtered()?t("fl.nothing"):empty||t("setup.none"))}</div>`;
+    body.querySelectorAll("[data-sort]").forEach(b=>b.onclick=()=>{const k=b.dataset.sort;if(st.sort===k)st.desc=!st.desc;else{st.sort=k;st.desc=!!(cols.find(c=>c.k===k)||{}).desc}flSave();draw()});
+    body.querySelectorAll("tr[data-go]").forEach(tr=>{tr.onclick=e=>{if(e.target.closest("a,button,input"))return;openSite(tr.dataset.go)};tr.onkeydown=e=>{if(e.key==="Enter"&&e.target===tr)openSite(tr.dataset.go)}});
+    const m=body.querySelector("[data-more]");if(m)m.onclick=()=>{lim+=page*3;draw()}}
+  el.querySelector("[data-q]").oninput=e=>{st.q=e.target.value;lim=page;flSave();draw()};
+  el.querySelectorAll("[data-f]").forEach(c=>c.onchange=()=>{st[c.dataset.f]=c.type==="checkbox"?c.checked:c.value;lim=page;flSave();draw()});
+  el.querySelector("[data-clear]").onclick=()=>{for(const k of Object.keys(st._d))if(k!=="sort"&&k!=="desc")st[k]=st._d[k];flSave();
+    el.querySelector("[data-q]").value=st.q||"";el.querySelectorAll("[data-f]").forEach(c=>{if(c.type==="checkbox")c.checked=!!st[c.dataset.f];else c.value=st[c.dataset.f]});draw()};
+  el.querySelector("[data-csv]").onclick=()=>downloadCSV(csvName,cols.filter(c=>!c.nocsv),shown);
+  draw();return {draw}}
+
+/* ---------- site state ---------- */
+const RANK={critical:0,warning:1,advisory:2,offline:3,nodata:4,ok:5,draft:6};
+const isOffline=s=>(s.readings||[]).some(r=>r.quality===2);
+const hasData=s=>(s.readings||[]).some(r=>r.value!=null);
+const isSpilling=s=>(s.readings||[]).some(r=>r.quantity==="state"&&r.quality!==2&&r.value>=.5);
+function siteState(s){if(s.status!=="live")return "draft";if(s.worst)return s.worst;if(!hasData(s))return "nodata";if(isOffline(s))return "offline";return "ok"}
+function stateHTML(s){const k=siteState(s);
+  return (RANK[k]<3?sevChip(k):`<span class="chip ${k==="ok"?"ok":"draft"}">${esc(t("si.s."+k))}</span>`)
+    +(isSpilling(s)?` <span class="chip warning">${esc(t("si.s.spilling"))}</span>`:"")+(isOffline(s)&&k!=="offline"?` <span class="chip draft">${esc(t("si.s.offline"))}</span>`:"")}
+const stateText=s=>[t(RANK[siteState(s)]<3?"sev."+siteState(s):"si.s."+siteState(s)),isSpilling(s)?t("si.s.spilling"):"",isOffline(s)&&siteState(s)!=="offline"?t("si.s.offline"):""].filter(Boolean).join(", ");
+function showMatch(s,show){return !show||(show==="attention"?s.status==="live"&&!!s.worst:show==="spilling"?isSpilling(s):show==="offline"?s.status==="live"&&(isOffline(s)||!hasData(s)):show==="ok"?siteState(s)==="ok":show==="draft"?s.status!=="live":true)}
+const showOpts=()=>[["",t("ov.f.all")],["attention",t("ov.f.attention")],["spilling",t("ov.f.spilling")],["offline",t("ov.f.offline")],["ok",t("ov.f.ok")],["draft",t("ov.f.draft")]];
+const lastTs=s=>{const v=Math.max(0,...(s.readings||[]).map(r=>r.ts||0));return v||null};
+function readingText(s){const r=(s.readings||[]).find(r=>r.value!=null);return r?`${r.name}: ${show({...r,site_type:s.site_type},r.value,r.quality)}`:"—"}
+const sysNames=()=>Object.fromEntries((TREE?TREE.regions:[]).flatMap(r=>r.systems.map(s=>[s.key,s.name])));
+async function loadSites(){
+  let d=await api("/api/map"+(SYS&&!ST?"?system="+encodeURIComponent(SYS):""));
+  const pick=x=>!SYS||(SYS.startsWith("region:")?x.region===SYS.slice(7):x.system===SYS);
+  if(ST&&SYS)d={sites:d.sites.filter(pick),layers:(d.layers||[]).filter(pick)};
+  MAPDATA=d;return d}
+
+/* ---------- sites ---------- */
+async function showSites(){
+  const el=$("#v-sites");el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
+  const d=await loadSites(),names=sysNames(),now=CONF.clock_ms/1000;
+  const types=[...new Set(d.sites.map(s=>s.site_type))].sort((a,b)=>t("st."+a).localeCompare(t("st."+b)));
+  const systems=[...new Set(d.sites.map(s=>s.system))];
+  const st=fl("sites",{q:"",show:"",type:"",system:"",sort:"state",desc:false});
+  const cols=[
+    {k:"name",label:t("si.c.name"),get:s=>s.name,html:s=>`<a href="#site-${esc(s.key)}">${esc(s.name)}</a><div class="small muted mono">${esc(s.key)}</div>`},
+    {k:"type",label:t("si.c.type"),get:s=>t("st."+s.site_type)},
+    {k:"system",label:t("si.c.system"),get:s=>names[s.system]||s.system},
+    {k:"state",label:t("si.c.status"),get:stateText,sort:s=>RANK[siteState(s)],html:stateHTML},
+    {k:"reading",label:t("si.c.reading"),get:readingText,nosort:true},
+    {k:"age",label:t("si.c.age"),get:s=>lastTs(s)?fmtT(lastTs(s)*1000,true):"",sort:lastTs,html:s=>lastTs(s)?`<span title="${esc(fmtT(lastTs(s)*1000,true))}">${esc(t("si.ago",{d:dur(now-lastTs(s))}))}</span>`:"—",cls:"small"},
+    {k:"crit",label:t("si.c.crit"),get:s=>s.criticality,num:true}];
+  listView(el,{view:"sites",st,cols,rows:d.sites,go:s=>s.key,csvName:"sites",empty:t("ov.no_sites"),
+    head:`<h2>${esc(t("si.title"))}</h2>`,
+    controls:selF("show",st,showOpts())+selF("type",st,[["",t("fl.any_type")],...types.map(k=>[k,t("st."+k)])])
+      +(systems.length>1?selF("system",st,[["",t("fl.any_system")],...systems.map(k=>[k,names[k]||k])]):""),
+    filter:(s,st)=>hit(st.q,s.name,s.key,t("st."+s.site_type),names[s.system])&&showMatch(s,st.show)&&(!st.type||s.site_type===st.type)&&(!st.system||s.system===st.system)})
+}
+
+/* ---------- alerts ---------- */
+const shelvedNow=a=>a.end_ms==null&&a.shelved_until_ms>Date.now();
+async function alertsList(hours){
+  const all=await api(`/api/alerts?${SYS?"system="+encodeURIComponent(SYS)+"&":""}ended_hours=${hours}&shelved=1`);
+  return ST?all.filter(a=>!SYS||!a.system||(SYS.startsWith("region:")?a.region===SYS.slice(7):a.system===SYS)):all}
+async function showAlerts(){
+  const el=$("#v-alerts");if(!el.innerHTML)el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
+  const all=await alertsList(168),now=CONF.clock_ms,week=now-7*864e5;
+  const st=fl("alerts",{q:"",sev:"",state:"active",rule:"",sort:"sev",desc:false});
+  const inState=(a,s)=>s==="all"?a.end_ms==null||a.end_ms>week:s==="active"?a.end_ms==null&&!shelvedNow(a):s==="unacked"?a.end_ms==null&&!a.ack_by&&!shelvedNow(a)
+    :s==="acked"?a.end_ms==null&&!!a.ack_by:s==="shelved"?shelvedNow(a):a.end_ms!=null&&a.end_ms>week;
+  const stateOf=a=>a.end_ms!=null?t("al.s.cleared",{time:fmtT(a.end_ms,true)}):shelvedNow(a)?t("al.s.shelved",{who:a.shelved_by||""}):a.ack_by?t("al.s.acked",{who:a.ack_by}):t("al.s.open");
+  const rules=[...new Set(all.map(a=>a.rule))].sort();
+  const cols=[
+    {k:"sev",label:t("al.c.sev"),get:a=>t("sev."+a.severity),sort:a=>RANK[a.severity]*1e13-a.start_ms,html:a=>sevChip(a.severity)},
+    {k:"site",label:t("al.c.site"),get:a=>a.site_name||"",html:a=>a.site?`<a href="#site-${esc(a.site)}">${esc(a.site_name)}</a><div class="small muted">${esc(a.system_name||"")}</div>`:esc(a.system_name||"—")},
+    {k:"what",label:t("al.c.what"),get:a=>alertText(a),nosort:true,html:a=>`<div class="small muted">${esc(t("rule."+a.rule))}</div>${esc(alertText(a))}`,cls:"what"},
+    {k:"start",label:t("al.c.start"),get:a=>fmtT(a.start_ms,true),sort:a=>a.start_ms,desc:true,cls:"small"},
+    {k:"for",label:t("al.c.for"),get:a=>dur(((a.end_ms??now)-a.start_ms)/1000),sort:a=>(a.end_ms??now)-a.start_ms,desc:true,num:true,cls:"small"},
+    {k:"state",label:t("al.c.state"),get:stateOf,sort:a=>a.end_ms!=null?3:shelvedNow(a)?2:a.ack_by?1:0,cls:"small"}];
+  if(!ST)cols.push({k:"acts",label:"",nosort:true,nocsv:true,get:()=>"",html:a=>a.end_ms!=null?"":`<div class="acts">${a.ack_by?"":`<button class="btn small" data-ack="${a.id}">${esc(t("al.ack"))}</button>`}${shelvedNow(a)?`<button class="btn small" data-unshelve="${a.id}">${esc(t("al.unshelve"))}</button>`:`<button class="btn small" data-shelve="${a.id}">${esc(t("al.shelve"))}</button>`}</div>`});
+  listView(el,{view:"alerts",st,cols,rows:all,go:a=>a.site,csvName:"alerts",empty:t("ov.none"),
+    head:`<h2>${esc(t("al.title"))}</h2>`,
+    controls:selF("state",st,[["active",t("al.st.active")],["unacked",t("al.st.unacked")],["acked",t("al.st.acked")],["shelved",t("al.st.shelved")],["cleared",t("al.st.cleared")],["all",t("al.st.all")]])
+      +selF("sev",st,[["",t("fl.any_sev")],...["critical","warning","advisory"].map(s=>[s,t("sev."+s)])])
+      +selF("rule",st,[["",t("fl.any_rule")],...rules.map(r=>[r,t("rule."+r)])]),
+    filter:(a,st)=>inState(a,st.state)&&(!st.sev||a.severity===st.sev)&&(!st.rule||a.rule===st.rule)&&hit(st.q,a.site_name,a.site,a.system_name,alertText(a),t("rule."+a.rule))})
+}
+function goAlerts(sev){const st=fl("alerts",{q:"",sev:"",state:"active",rule:"",sort:"sev",desc:false});Object.assign(st,{q:"",rule:"",state:"active",sev:sev||""});flSave();setView("alerts");render()}
+
+/* ---------- find a site (header) ---------- */
+function setupFind(){
+  const inp=$("#find"),list=$("#findList");let res=[],cur=0;
+  const close=()=>{list.hidden=true;inp.setAttribute("aria-expanded","false")};
+  const draw=()=>{const q=inp.value.trim();if(!q||!MAPDATA){close();return}
+    res=MAPDATA.sites.filter(s=>hit(q,s.name,s.key,t("st."+s.site_type))).sort((a,b)=>(fold(a.name).startsWith(fold(q))?0:1)-(fold(b.name).startsWith(fold(q))?0:1)||a.name.localeCompare(b.name)).slice(0,8);cur=0;
+    list.innerHTML=res.length?res.map((s,i)=>`<button type="button" role="option" data-find="${esc(s.key)}" aria-selected="${i===cur}"><span>${esc(s.name)}<span class="small muted"> · ${esc(t("st."+s.site_type))}</span></span>${RANK[siteState(s)]<3?sevChip(siteState(s)):""}</button>`).join(""):`<div class="small muted" style="padding:8px 10px">${esc(t("find.none"))}</div>`;
+    list.hidden=false;inp.setAttribute("aria-expanded","true")};
+  const pick=k=>{inp.value="";close();inp.blur();openSite(k)};
+  inp.oninput=async()=>{if(!MAPDATA)await loadSites();draw()};
+  inp.onkeydown=e=>{const b=[...list.querySelectorAll("[data-find]")];
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(!b.length)return;cur=(cur+(e.key==="ArrowDown"?1:b.length-1))%b.length;b.forEach((x,i)=>x.setAttribute("aria-selected",i===cur))}
+    else if(e.key==="Enter"&&res[cur]){e.preventDefault();pick(res[cur].key)}else if(e.key==="Escape"){inp.value="";close();inp.blur()}};
+  list.onmousedown=e=>{const b=e.target.closest("[data-find]");if(b){e.preventDefault();pick(b.dataset.find)}};
+  inp.onblur=()=>setTimeout(close,150);
+  document.addEventListener("keydown",e=>{if(e.key==="/"&&!e.target.closest("input,textarea,select,dialog")){e.preventDefault();const q=document.querySelector("section:not([hidden]) [data-q]");(q||inp).focus()}});
 }
 
 /* ---------- views and start-up ---------- */
 const hashSite=()=>{const h=decodeURIComponent(location.hash.slice(1));return h.startsWith("site-")?h.slice(5):h.startsWith("site=")?h.slice(5):null};
-function setView(v){VIEW=v;if(v!=="site"&&location.hash)try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}for(const s of ["overview","site","spills","setup","log"])$("#v-"+s).hidden=s!==v;$$("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.view===(v==="site"?"overview":v)?"page":"false"));
+function setView(v){VIEW=v;if(v!=="site"&&location.hash)try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}for(const s of ["overview","site","alerts","sites","spills","setup","log"])$("#v-"+s).hidden=s!==v;$$("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.view===(v==="site"?PREV:v)?"page":"false"));
   if(v==="overview"&&map)setTimeout(()=>map.invalidateSize(),50)}
-async function render(){if(VIEW==="overview")await showOverview();else if(VIEW==="site")await openSite(SITE,true);else if(VIEW==="spills")await showSpills();else if(VIEW==="setup")await showSetup();else await showLog()}
+async function render(){if(VIEW==="overview")await showOverview();else if(VIEW==="site")await openSite(SITE,true);else if(VIEW==="alerts")await showAlerts();else if(VIEW==="sites")await showSites();else if(VIEW==="spills")await showSpills();else if(VIEW==="setup")await showSetup();else await showLog()}
 async function reloadTree(){TREE=await api("/api/tree");const sel=$("#sysPick");
   sel.innerHTML=(TREE.regions.length>1?"":`<option value="">${esc(t("sys.all"))}</option>`)+TREE.regions.map(r=>`<optgroup label="${esc(r.name)}">${r.systems.length>1||TREE.regions.length>1?`<option value="region:${esc(r.key)}">${esc(t("sys.all_in",{name:r.name}))}</option>`:""}${r.systems.map(s=>`<option value="${esc(s.key)}">${esc(s.name)} · ${esc(t("nt."+s.network_type))}</option>`).join("")}</optgroup>`).join("");
   if(!SYS&&TREE.regions.length>1){const d=CONF.default_system;SYS=d&&[...sel.options].some(o=>o.value===d)?d:"region:"+TREE.regions[0].key}
@@ -690,12 +870,13 @@ async function start(){
   $("#foot").innerHTML=`Waterworks Desk ${esc(CONF.version)}${(CONF.credits||[]).length?" · "+esc(t("credits"))+": "+CONF.credits.map(c=>c.url?`<a href="${esc(c.url)}" rel="noopener">${esc(c.text)}</a>`:esc(c.text)).join(" · "):""}`;
   $$("nav.tabs button").forEach(b=>b.onclick=()=>{setView(b.dataset.view);render()});
   $("#sysPick").onchange=e=>{SYS=e.target.value;savePrefs();CONF.clock_ms=clockFor();banners();if(VIEW==="site")setView("overview");render()};
-  $("#lang").onchange=async e=>{await loadLang(e.target.value);savePrefs();applyWords();banners();await reloadTree();
+  $("#lang").onchange=async e=>{await loadLang(e.target.value);savePrefs();applyWords();banners();await reloadTree();$("#find").placeholder=t("find.ph");
     render()};
-  $("#you").onchange=savePrefs;$("#showShelved").onchange=refreshAlerts;
+  $("#you").onchange=savePrefs;setupFind();$("#find").placeholder=t("find.ph");
   const hs=hashSite();if(hs){await openSite(hs)}else{setView("overview");await render()}
-  window.addEventListener("hashchange",()=>{const k=hashSite();if(k&&k!==SITE)openSite(k)});
-  if(!ST)setInterval(()=>{if(VIEW==="overview"&&!$("#dlg").open)refreshAlerts().catch(()=>{})},60000);
+  window.addEventListener("hashchange",()=>{const k=hashSite();if(k&&(k!==SITE||VIEW!=="site"))openSite(k)});
+  if(!ST)setInterval(()=>{if($("#dlg").open||document.activeElement&&document.activeElement.matches("input,select"))return;
+    if(VIEW==="overview")refreshAlerts().catch(()=>{});else if(VIEW==="alerts")showAlerts().catch(()=>{})},60000);
 }
 start().catch(e=>{document.querySelector("main").innerHTML=`<div class="empty">Couldn't start: ${esc(e.message)}</div>`});
 })();
