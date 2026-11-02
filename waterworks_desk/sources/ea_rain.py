@@ -2,8 +2,10 @@
 gauges reporting millimetres per 15 minutes. No sign-up; Open Government Licence v3 (credit:
 "This uses Environment Agency rainfall data from the real-time data API (Beta)"). Read-only.
 
-Each run asks for every rainfall reading since the last one it has (the API keeps four weeks),
-for the stations set up as sensors (tag = the station reference, e.g. 287283TP).
+Each run asks each station set up as a sensor (tag = the station reference, e.g. 287283TP) for
+its readings since the last one stored: a week back on the first run, at most four weeks (what
+the API keeps). One small request per station: asking for every gauge in England at once is
+more than the API will answer.
 
 config.toml:
     [[sources]]
@@ -65,25 +67,32 @@ class EARain(Adapter):
             "SELECT source_tag FROM sensors WHERE source=? AND status!='retired' AND source_tag IS NOT NULL", (self.key,))}
         if not stations:
             return
-        last = conn.execute("SELECT MAX(r.ts) FROM readings r JOIN sensors s ON s.id=r.sensor_id WHERE s.source=?",
-                            (self.key,)).fetchone()[0]
-        since = max(last or 0, int(time.time()) - 27 * 86400) - 3600
-        q = {"parameter": "rainfall", "since": datetime.fromtimestamp(since, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-             "_limit": 10000, "_sorted": ""}
-        data = get_json(f"{api}/data/readings?" + urllib.parse.urlencode(q))
-        items = [i for i in (data.get("items") or []) if station_of(i.get("measure")) in stations]
-        yield Batch(f"readings since {datetime.fromtimestamp(since, timezone.utc):%Y-%m-%d %H:%M}", items)
+        first = int(self.source.get("first_days", 7))
+        items, problems = [], []
+        for ref in sorted(stations):
+            last = conn.execute("SELECT MAX(r.ts) FROM readings r JOIN sensors s ON s.id=r.sensor_id "
+                                "WHERE s.source=? AND s.source_tag=?", (self.key, ref)).fetchone()[0]
+            since = max(last - 3600 if last else int(time.time()) - first * 86400, int(time.time()) - 27 * 86400)
+            iso = datetime.fromtimestamp(since, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            url = f"{api}/id/stations/{urllib.parse.quote(ref)}/readings?_sorted&_limit=5000&since={iso}"
+            try:
+                items += get_json(url, tries=2).get("items") or []
+            except Exception as e:   # one gauge failing never stops the others
+                problems.append(f"{ref}: {type(e).__name__}: {e}"[:160])
+        b = Batch(f"{len(stations)} stations", items)
+        b.problems, b.skipped = problems[:8], len(problems)
+        yield b
 
     @classmethod
     def trap_test(cls, trap):
         url = getattr(trap, "url", None)
         if not url:
             return
-        trap.routes["/data/readings"] = {"items": [
+        trap.routes["/id/stations/287283TP/readings"] = {"items": [
             {"dateTime": "2026-11-02T07:15:00Z", "value": 0.4,
              "measure": url + "/id/measures/287283TP-rainfall-tipping_bucket_raingauge-t-15_min-mm"},
-            {"dateTime": "2026-11-02T07:15:00Z", "value": 1.0,
-             "measure": url + "/id/measures/OTHER-rainfall-tipping_bucket_raingauge-t-15_min-mm"}]}
+            {"dateTime": "bad", "value": 1.0,
+             "measure": url + "/id/measures/287283TP-rainfall-tipping_bucket_raingauge-t-15_min-mm"}]}
         from ..db import connect
         import tempfile
         from pathlib import Path
