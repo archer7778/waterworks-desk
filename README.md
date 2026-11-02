@@ -55,7 +55,7 @@ Automatic updates are **off** by default; update by hand after reviewing changes
 
 | Page | For |
 |---|---|
-| **Overview** | The map and the few most serious alerts. Filter the map to what needs attention, what's spilling, what's offline, or one site type. Several sites at one spot show as one marker with a count. |
+| **Overview** | A status strip (overflows spilling now, spilled in the last 24 hours, possible dry-day spills, sites offline, rain, data-feed freshness); each number filters the map. The map colours sites by state: problems drawn one by one (spilling ones pulse), healthy sites faded and gathered into numbered clusters when zoomed out, rain gauges as circles sized by the last day's rain. Clicking a site opens a preview beside the map. Alerts are grouped by kind with critical and new ones in full, and a 24-hour timeline shows rain, overflows spilling and sites offline against time. |
 | **Alerts** | Every alert, filtered by state (active, not acknowledged, shelved, cleared this week), severity and kind, sorted by any column, and acknowledged or shelved from the list. |
 | **Sites** | Every site in one table: status, latest reading and when it last reported. Sort by *Last data* to find sites that have gone quiet. |
 | **Spills** | Storm overflow spills per overflow, filtered by receiving water or to possible dry-day spills. |

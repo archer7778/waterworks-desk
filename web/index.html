@@ -38,17 +38,19 @@ a{color:var(--accent)}
 .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .muted{color:var(--muted)}
 .small{font-size:13px}
-h1{font-size:19px;margin:0;font-weight:650}
+h1{font-size:17px;white-space:nowrap;margin:0;font-weight:650}
 h2{font-size:16px;margin:0 0 8px;font-weight:650}
 h3{font-size:14px;margin:14px 0 6px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 
 .banner{padding:8px 16px;font-size:14px;border-bottom:1px solid var(--line);background:var(--adv-bg)}
-.banner.safety{background:var(--sunk);color:var(--muted);font-size:13px}
-header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.banner{display:flex;gap:4px 8px;align-items:baseline;flex-wrap:wrap;padding:5px 16px;font-size:13px}
+.banner .x{all:unset;cursor:pointer;margin-left:auto;padding:0 6px;font-size:17px;line-height:1;color:var(--muted)}.banner .x:focus-visible{outline:2px solid var(--accent)}
+#sysPick{max-width:190px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
 header.top .brand{display:flex;align-items:center;gap:10px}
 header.top .brand svg{flex:none}
 nav.tabs{display:flex;gap:4px;max-width:100%;overflow-x:auto;scrollbar-width:none}nav.tabs::-webkit-scrollbar{display:none}
-nav.tabs button{white-space:nowrap;flex:none;border:0;background:none;padding:7px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
+nav.tabs button{white-space:nowrap;flex:none;border:0;background:none;padding:6px 10px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
 nav.tabs button[aria-current="page"]{background:var(--accent-bg);color:var(--accent)}
 .grow{flex:1}
 .who{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -127,9 +129,47 @@ dialog .dlg-head{display:flex;justify-content:space-between;align-items:center;m
 .sketch svg{width:100%;max-width:300px;height:auto}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;max-width:90vw;z-index:2000;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .empty{padding:20px;text-align:center;color:var(--muted)}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-bottom:14px}
+.tile{all:unset;box-sizing:border-box;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.tile b{font-size:25px;line-height:1.15;font-variant-numeric:tabular-nums}.tile .l{font-size:13px;font-weight:650}.tile .s{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile.ok{border-left-color:var(--ok)}.tile.warn{border-left-color:var(--warn)}.tile.warn b{color:var(--warn)}.tile.crit{border-left-color:var(--crit)}.tile.crit b{color:var(--crit)}
+.tile.stale{border-left-color:var(--stale)}.tile.water{border-left-color:var(--water)}.tile.water b{color:var(--water)}
+.tile:hover{border-color:var(--accent)}.tile[aria-pressed="true"]{background:var(--accent-bg);outline:2px solid var(--accent);outline-offset:-1px}.tile:focus-visible{outline:2px solid var(--accent)}
+.mapbox{position:relative}
+#peek{position:absolute;top:10px;right:10px;z-index:1000;width:min(290px,calc(100% - 20px));background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+#peek .x{all:unset;cursor:pointer;float:right;font-size:20px;line-height:1;padding:0 4px;color:var(--muted)}#peek .x:focus-visible{outline:2px solid var(--accent)}
+.peekal{list-style:none;margin:6px 0 0;padding:0}.peekal li{display:flex;gap:6px;align-items:center}
+.site-icon>*{position:relative}
+.dot{display:block;border-radius:50%;box-sizing:border-box;margin:auto}
+.dot.ok{width:10px;height:10px;background:var(--ok);opacity:.6;border:1.5px solid var(--panel);margin-top:7px}
+.dot.spilled{width:15px;height:15px;background:var(--panel);border:3.5px solid var(--warn);margin-top:4.5px}
+.dot.off{width:13px;height:13px;background:var(--stale);border:2px solid var(--panel);margin-top:5.5px}
+.faded{opacity:.55}
+.pulse{position:absolute!important;inset:-7px;border-radius:50%;border:3px solid var(--warn);animation:wwdpulse 1.6s ease-out infinite;pointer-events:none}
+@keyframes wwdpulse{from{transform:scale(.45);opacity:.95}to{transform:scale(1.35);opacity:0}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none;opacity:.55}}
+.cluster{display:grid;place-items:center;width:100%;height:100%;box-sizing:border-box;border-radius:50%;background:color-mix(in srgb,var(--ok) 20%,var(--panel));border:1.5px solid color-mix(in srgb,var(--ok) 70%,transparent);color:var(--ink);font-size:11px;font-weight:700;opacity:.9}
+.cluster.draft{background:var(--stale-bg);border-color:var(--stale)}
+.site-icon.hl{z-index:9000!important}.site-icon.hl>*{filter:drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 2px var(--accent));transform:scale(1.35)}
+path.rain{stroke:var(--water);fill:var(--water)}path.rain.nodata{stroke:var(--stale);stroke-dasharray:2 2}svg circle.rain{stroke:var(--water);fill:var(--water)}
+.legend-ctl{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;max-width:230px;color:var(--ink)}
+.legend-ctl summary{cursor:pointer;font-weight:650}.legend-ctl .lg{display:grid;gap:3px;margin:6px 0 2px}.legend-ctl .lg span{display:flex;align-items:center;gap:8px}
+.legend-ctl i{width:24px;height:24px;display:grid;place-items:center;position:relative;flex:none}
+.agroup{border:1px solid var(--line);border-left:5px solid var(--stale);border-radius:10px;padding:6px 10px;margin-bottom:8px}
+.agroup.critical{border-left-color:var(--crit)}.agroup.warning{border-left-color:var(--warn)}.agroup.advisory{border-left-color:var(--adv)}
+.agroup summary{display:flex;gap:8px;align-items:center;cursor:pointer;flex-wrap:wrap}.agroup .sevdot{display:inline-flex}
+.agroup.critical .sevdot{color:var(--crit)}.agroup.warning .sevdot{color:var(--warn)}.agroup.advisory .sevdot{color:var(--adv)}
+.arows{list-style:none;margin:6px 0 2px;padding:0;max-height:300px;overflow:auto}
+.arows li{display:flex;justify-content:space-between;gap:10px;padding:4px 6px;border-radius:6px;cursor:pointer}.arows li:hover,.arows li:focus{background:var(--accent-bg);outline:none}
+#timeline{margin-top:10px}.tl-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;min-height:20px}
+#timeline svg{display:block;width:100%;height:auto;overflow:visible}
+.tl-label{font-size:11px;fill:var(--muted);font-weight:650}.tl-max,.tl-tick{font-size:10px;fill:var(--muted)}
+.tl-base{stroke:var(--line)}.tl-grid{stroke:var(--line);stroke-dasharray:2 3}.tl-cur{stroke:var(--accent);stroke-width:1.5}
+.tl-rain{fill:var(--water);opacity:.75}.tl-spill{fill:var(--warn);opacity:.55}.tl-off{fill:var(--stale);opacity:.45}.tl-dry{fill:var(--crit)}
+
 .filters{margin:4px 0 12px}.filters input[type=search]{flex:1 1 220px;min-width:0;max-width:340px}.filters select{max-width:100%}
 table.list td.what{min-width:260px;max-width:560px}
-.find{position:relative;flex:0 1 280px;min-width:180px}.find input{width:100%}
+.find{position:relative;flex:0 1 180px;min-width:140px}.find input{width:100%}
 #findList{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:1500;padding:4px;max-height:60vh;overflow:auto}
 #findList button{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:7px;cursor:pointer}
 #findList button[aria-selected="true"],#findList button:hover{background:var(--accent-bg)}
@@ -142,8 +182,7 @@ details.sys>summary{cursor:pointer;color:var(--muted);font-size:13px;margin:4px 
 </style>
 </head>
 <body>
-<div id="demo" class="banner" hidden></div>
-<div class="banner safety" data-t="safety"></div>
+<div id="notice" class="banner"><span id="demo" hidden></span><span data-t="safety"></span><button id="noticeX" class="x" type="button" aria-label="Close">×</button></div>
 <header class="top">
   <div class="brand">
     <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 3c4 5.5 7.5 9.4 7.5 13.3A7.5 7.5 0 0 1 6.5 16.3C6.5 12.4 10 8.5 14 3z" fill="var(--water)"/><path d="M10 17.5a4 4 0 0 0 4 4" stroke="var(--panel)" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
@@ -170,12 +209,14 @@ details.sys>summary{cursor:pointer;color:var(--muted);font-size:13px;margin:4px 
 
 <main>
   <section id="v-overview" hidden>
+    <div class="strip" id="strip"></div>
+    <div class="panel" id="feeds" hidden style="margin-bottom:14px"></div>
     <div class="grid-ov">
       <div class="panel">
-        <div class="filters row"><input type="search" id="mapQ" aria-label="Search"><select id="mapShow" aria-label="Show"></select><select id="mapType" aria-label="Site type"></select><span class="grow"></span><span class="small muted" id="mapCount" aria-live="polite"></span></div>
-        <div id="map" role="application" aria-label="Map of sites"></div>
-        <div class="legend" id="legend"></div>
-        <div class="small muted" id="rain24"></div>
+        <div class="filters row"><input type="search" id="mapQ" aria-label="Search"><select id="mapShow" aria-label="Show"></select><select id="mapType" aria-label="Site type"></select>
+          <label class="small row" id="mapRainL"><input type="checkbox" id="mapRain"> <span data-t="ov.rain_layer"></span></label><span class="grow"></span><span class="small muted" id="mapCount" aria-live="polite"></span></div>
+        <div class="mapbox"><div id="map" role="application" aria-label="Map of sites"></div><div id="peek" hidden aria-live="polite"></div></div>
+        <div id="timeline"></div>
       </div>
       <div>
         <div class="panel">
@@ -332,89 +373,226 @@ function markerSVG(sev,draft){const c=draft?"var(--stale)":{critical:"var(--crit
     sev==="advisory"?`<rect x="4" y="4" width="16" height="16" rx="3" fill="${c}" stroke="var(--panel)" stroke-width="2"/>`:
     `<circle cx="12" cy="12" r="7.5" fill="${c}" stroke="var(--panel)" stroke-width="2"/>`;
   return `<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">${shape}</svg>`}
-function drawLegend(){const types=[...new Set((MAPDATA?MAPDATA.sites:[]).map(s=>s.site_type))];
-  $("#legend").innerHTML=`<strong>${esc(t("ov.legend"))}:</strong>`+["critical","warning","advisory"].map(s=>`<span>${markerSVG(s)}${esc(t("lg."+s))}</span>`).join("")
-    +types.map(k=>`<span>${typeSVG(k)}${esc(t("st."+k))}</span>`).join("")+`<span>${typeSVG(types[0]||"other",true)}${esc(t("lg.draft"))}</span>`
-    +((MAPDATA&&MAPDATA.layers||[]).length?`<span><svg width="24" height="10" aria-hidden="true"><line x1="1" y1="5" x2="23" y2="5" class="wwd-pipe" stroke-width="3"/></svg>${esc(t("lg.pipes"))}</span>`:"")}
+/* ---------- overview: status strip, map, rain, preview, grouped alerts, timeline ---------- */
+const MAPF={q:"",show:"",type:"",rain:true};
+let PULSE=null,P=null,SHOWN=[],MK=new Map(),rainLayer=null,legendCtl=null,PEEK=null,HL=null;
+const isOverflow=s=>/overflow|outfall/.test(s.site_type);
+async function loadPulse(){try{PULSE=await api("/api/pulse?hours=24")}catch(e){PULSE=null}prepPulse()}
+function prepPulse(){if(!PULSE||!MAPDATA){P=null;return}
+  const keys=new Set(MAPDATA.sites.map(s=>s.key)),inn=x=>keys.has(x.site);
+  P={...PULSE,spills:PULSE.spills.filter(inn),offline:PULSE.offline.filter(inn),dry:PULSE.dry.filter(inn),
+    gauges:Object.fromEntries(Object.entries(PULSE.rain.gauges).filter(([k])=>keys.has(k)))};
+  P.spillSet=new Set(P.spills.map(x=>x.site));P.drySet=new Set(P.dry.map(x=>x.site))}
+const MRANK={critical:0,spilling:1,warning:2,offline:3,advisory:4,spilled:5,ok:6,draft:7};
+function mstate(s){if(s.status!=="live")return "draft";if(s.worst==="critical")return "critical";if(isSpilling(s))return "spilling";if(s.worst==="warning")return "warning";
+  if(isOffline(s)||!hasData(s))return "offline";if(s.worst==="advisory")return "advisory";if(P&&P.spillSet.has(s.key))return "spilled";return "ok"}
+function micon(k,type,zoom){
+  if(k==="ok")return zoom>=14?`<span class="faded">${typeSVG(type)}</span>`:`<span class="dot ok"></span>`;
+  if(k==="draft")return typeSVG(type,true);
+  if(k==="spilled")return `<span class="dot spilled"></span>`;
+  if(k==="offline")return `<span class="dot off"></span>`;
+  if(k==="spilling")return `<span class="pulse"></span>${markerSVG("warning")}`;
+  return markerSVG(k)}
+const stateWord=k=>t("lg."+k);
 function ensureMap(){
   if(map)return;
   map=L.map("map",{zoomControl:true,attributionControl:true});
   if(CONF.map.tile_url)map._tiles=L.tileLayer(CONF.map.tile_url,{maxZoom:CONF.map.max_zoom||19,attribution:CONF.map.attribution||""});
   L.control.scale({imperial:false}).addTo(map);
-  lines=L.layerGroup().addTo(map);markers=L.layerGroup().addTo(map);
+  lines=L.layerGroup().addTo(map);rainLayer=L.layerGroup().addTo(map);markers=L.layerGroup().addTo(map);
+  legendCtl=new (L.Control.extend({onAdd(){const d=L.DomUtil.create("div","legend-ctl");L.DomEvent.disableClickPropagation(d);L.DomEvent.disableScrollPropagation(d);return d}}))({position:"bottomleft"});
+  legendCtl.addTo(map);
+  map.on("zoomend",drawMarkers);
 }
-function mapShown(){const st=fl("map",{q:"",show:"",type:""});
+function mapShown(){const st=fl("map",MAPF);
   return MAPDATA.sites.filter(s=>hit(st.q,s.name,s.key,t("st."+s.site_type))&&showMatch(s,st.show)&&(!st.type||s.site_type===st.type))}
-function drawMap(){
-  ensureMap();markers.clearLayers();lines.clearLayers();const pts=[];
-  const shown=mapShown();$("#mapCount").textContent=t("fl.showing",{n:shown.length,total:MAPDATA.sites.length});
-  const groups=new Map();for(const s of shown){const k=s.lat.toFixed(4)+","+s.lon.toFixed(4);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(s)}
+function drawMap(fit=true){
+  ensureMap();lines.clearLayers();SHOWN=mapShown();
   const streets=!!map._tiles&&MAPDATA.sites.length>0&&MAPDATA.sites.every(s=>s.basemap!==false);
   if(streets&&!map.hasLayer(map._tiles))map._tiles.addTo(map);if(!streets&&map._tiles&&map.hasLayer(map._tiles))map.removeLayer(map._tiles);
   $("#map").classList.toggle("blank",!streets);if(map._wwdNote){map.attributionControl.removeAttribution(map._wwdNote);map._wwdNote=null}
   if(!streets&&MAPDATA.sites.length){map._wwdNote=esc(t(map._tiles?"map.stand_in":"map.no_tiles"));map.attributionControl.addAttribution(map._wwdNote)}
-  const labelled=new Set(MAPDATA.sites.length<=80?MAPDATA.sites.filter(s=>s.criticality===1&&s.site_type!=="pressure_logger").map(s=>s.key):[]);
   for(const l of MAPDATA.layers||[]){L.geoJSON(l.geojson,{interactive:false,style:f=>{const d=(f.properties||{}).diameter_mm;
     return {className:l.kind==="boundary"?"wwd-boundary":"wwd-pipe",weight:d?Math.max(1,Math.min(5,d/80)):2}}}).addTo(lines)}
-  for(const g of groups.values()){if(g.length<2)continue;
-    g.sort((a,b)=>RANK[siteState(a)]-RANK[siteState(b)]);const top=g[0],sev=RANK[siteState(top)]<3?siteState(top):null;
-    const icon=L.divIcon({className:"site-icon",html:`<div class="stack">${sev?markerSVG(sev):typeSVG(top.site_type,top.status!=="live")}<b>${g.length}</b></div>`,iconSize:[24,24],iconAnchor:[12,12]});
-    const m=L.marker([top.lat,top.lon],{icon,title:t("ov.here",{n:g.length}),keyboard:true,riseOnHover:true,zIndexOffset:{critical:900,warning:600,advisory:300}[sev]||0});
-    m.bindPopup(`<strong>${esc(t("ov.here",{n:g.length}))}</strong><ul class="here">${g.map(s=>`<li><button data-site="${esc(s.key)}">${RANK[siteState(s)]<3?SEV_ICON[siteState(s)]:""}${esc(s.name)}</button></li>`).join("")}</ul>`);
-    m.bindTooltip(esc(t("ov.here",{n:g.length})));markers.addLayer(m);pts.push([top.lat,top.lon])}
-  for(const s of shown){
-    if(groups.get(s.lat.toFixed(4)+","+s.lon.toFixed(4)).length>1)continue;
-    const draft=s.status!=="live";const icon=L.divIcon({className:"site-icon",html:s.worst&&!draft?markerSVG(s.worst):typeSVG(s.site_type,draft),iconSize:[24,24],iconAnchor:[12,12]});
-    const m=L.marker([s.lat,s.lon],{icon,title:s.name,keyboard:true,riseOnHover:true,zIndexOffset:{critical:900,warning:600,advisory:300}[s.worst]||0});
-    const reading=s.readings.find(r=>r.value!=null);
-    m.on("click",()=>openSite(s.key));markers.addLayer(m);pts.push([s.lat,s.lon]);
-    if(labelled.has(s.key)){const lons=MAPDATA.sites.map(o=>o.lon),east=s.lon>Math.max(...lons)-(Math.max(...lons)-Math.min(...lons))*.2;
-      const left=east||MAPDATA.sites.some(o=>o!==s&&labelled.has(o.key)&&o.lon>s.lon&&Math.hypot((o.lat-s.lat)*111e3,(o.lon-s.lon)*111e3*Math.cos(s.lat*Math.PI/180))<350);
-      m.bindTooltip(esc(s.name),{permanent:true,direction:left?"left":"right",offset:[left?-10:10,0],className:"site-label"})}
-    else m.bindTooltip(`<strong>${esc(s.name)}</strong><br>${esc(t("st."+s.site_type))} · ${esc(draft?t("status.draft"):t(s.worst?"sev."+s.worst:"sev.ok"))}${reading?`<br>${esc(reading.name)}: ${esc(show({...reading,site_type:s.site_type},reading.value,reading.quality))}`:""}`);
-  }
-  if(pts.length){const b=L.latLngBounds(pts);map.fitBounds(b.pad(0.08),{maxZoom:16})}
-  else if(TREE.regions[0]&&TREE.regions[0].lat!=null)map.setView([TREE.regions[0].lat,TREE.regions[0].lon],12);
-  else map.setView([20,0],2);
+  $("#mapCount").textContent=t("fl.showing",{n:SHOWN.length,total:MAPDATA.sites.length});
+  if(fit){map.invalidateSize();const pts=SHOWN.map(s=>[s.lat,s.lon]);
+    if(pts.length)map.fitBounds(L.latLngBounds(pts).pad(0.08),{maxZoom:16,animate:false});
+    else if(TREE.regions[0]&&TREE.regions[0].lat!=null)map.setView([TREE.regions[0].lat,TREE.regions[0].lon],12);
+    else map.setView([20,0],2)}
+  drawMarkers();drawRainLayer();
   setTimeout(()=>map.invalidateSize(),50);
 }
-async function drawRain(){
-  const g=MAPDATA.sites.find(s=>s.rain_sensor);if(!g){$("#rain24").textContent="";return}
-  const to=Math.floor(CONF.clock_ms/1000);
-  try{const r=await api(`/api/sensors/${encodeURIComponent(g.rain_sensor)}/readings?from=${to-86400}&to=${to}`);
-    if(!r.t.length){$("#rain24").textContent="";return}
-    let sum=0;if(r.res==="raw")sum=r.v.reduce((a,b)=>a+b,0);else sum=r.v.reduce((a,b,i)=>a+b*(r.n?r.n[i]:1),0);
-    $("#rain24").textContent=t("ov.rain24",{v:sum.toFixed(1),gauge:g.name})}catch(e){}
+/* Sites with something to say are drawn one by one; healthy ones gather into numbered clusters
+   when zoomed out, so problems stand out from the background. */
+function drawMarkers(){
+  if(!map||!MAPDATA)return;markers.clearLayers();MK.clear();const z=map.getZoom(),st=fl("map",MAPF);
+  const list=SHOWN.filter(s=>!(st.rain&&P&&s.site_type==="rain_gauge"&&s.key in P.gauges));
+  const groups=new Map(),add=(k,s)=>{if(!groups.has(k))groups.set(k,[]);groups.get(k).push(s)},spot=s=>"L"+s.lat.toFixed(4)+","+s.lon.toFixed(4);
+  for(const s of list){const k=mstate(s);
+    if((k==="ok"||k==="draft")&&z<14){const pt=map.project([s.lat,s.lon],z);add("C"+Math.floor(pt.x/48)+","+Math.floor(pt.y/48),s)}else add(spot(s),s)}
+  const small=MAPDATA.sites.length<=80;
+  for(const [gk,g] of groups){
+    g.sort((a,b)=>MRANK[mstate(a)]-MRANK[mstate(b)]);const top=g[0],k=mstate(top);let m;
+    if(g.length===1){
+      m=L.marker([top.lat,top.lon],{icon:L.divIcon({className:"site-icon",html:micon(k,top.site_type,z),iconSize:[24,24],iconAnchor:[12,12]}),title:top.name,keyboard:true,riseOnHover:true,zIndexOffset:(8-MRANK[k])*100});
+      const reading=top.readings.find(r=>r.value!=null);
+      if(small&&top.criticality===1&&top.site_type!=="pressure_logger")m.bindTooltip(esc(top.name),{permanent:true,direction:"right",offset:[10,0],className:"site-label"});
+      else m.bindTooltip(`<strong>${esc(top.name)}</strong><br>${esc(t("st."+top.site_type))} · ${esc(stateWord(k))}${reading?`<br>${esc(reading.name)}: ${esc(show({...reading,site_type:top.site_type},reading.value,reading.quality))}`:""}`);
+      m.on("click",()=>peek(top));
+    }else if(gk[0]==="L"){
+      m=L.marker([top.lat,top.lon],{icon:L.divIcon({className:"site-icon",html:`<div class="stack">${micon(k,top.site_type,z)}<b>${g.length}</b></div>`,iconSize:[24,24],iconAnchor:[12,12]}),title:t("ov.here",{n:g.length}),keyboard:true,riseOnHover:true,zIndexOffset:(8-MRANK[k])*100});
+      m.bindPopup(`<strong>${esc(t("ov.here",{n:g.length}))}</strong><ul class="here">${g.map(s=>`<li><button data-peek="${esc(s.key)}">${esc(s.name)} <span class="muted">· ${esc(stateWord(mstate(s)))}</span></button></li>`).join("")}</ul>`);
+      m.bindTooltip(esc(t("ov.here",{n:g.length})));
+    }else{
+      const lat=g.reduce((a,s)=>a+s.lat,0)/g.length,lon=g.reduce((a,s)=>a+s.lon,0)/g.length,px=Math.round(22+Math.min(16,Math.sqrt(g.length)*2.5));
+      m=L.marker([lat,lon],{icon:L.divIcon({className:"site-icon",html:`<div class="cluster${g.every(s=>s.status!=="live")?" draft":""}">${g.length}</div>`,iconSize:[px,px],iconAnchor:[px/2,px/2]}),title:t("ov.cluster",{n:g.length}),keyboard:true,zIndexOffset:-500});
+      m.bindTooltip(esc(t("ov.cluster",{n:g.length})));
+      m.on("click",()=>map.fitBounds(L.latLngBounds(g.map(s=>[s.lat,s.lon])).pad(0.3),{maxZoom:15}));
+    }
+    markers.addLayer(m);for(const s of g)MK.set(s.key,m);
+  }
+  if(HL)hl(HL,true);
+}
+function drawRainLayer(){if(!rainLayer)return;rainLayer.clearLayers();const st=fl("map",MAPF);if(!st.rain||!P)return;
+  for(const s of SHOWN){if(!(s.key in P.gauges))continue;const mm=P.gauges[s.key];
+    const c=L.circleMarker([s.lat,s.lon],{radius:mm==null?4:5+Math.min(22,Math.sqrt(mm)*4),className:mm==null?"rain nodata":"rain",weight:1.5,fillOpacity:mm==null?0:Math.min(.6,.18+mm/25)});
+    c.bindTooltip(esc(t(mm==null?"ov.rain_none":"ov.rain_gauge",{name:s.name,mm})));c.on("click",()=>peek(s));rainLayer.addLayer(c);MK.set(s.key,c)}}
+function drawLegend(){if(!legendCtl)return;const d=legendCtl.getContainer();const open=d.querySelector("details")?d.querySelector("details").open:lsGet("wwd.legend",false);
+  const it=(icon,k)=>`<span><i>${icon}</i>${esc(t(k))}</span>`;
+  d.innerHTML=`<details${open?" open":""}><summary>${esc(t("ov.legend"))}</summary><div class="lg">
+    ${it(markerSVG("critical"),"lg.critical")}${it(`<span class="pulse"></span>${markerSVG("warning")}`,"lg.spilling")}${it(markerSVG("warning"),"lg.warning")}
+    ${it(`<span class="dot off"></span>`,"lg.offline")}${it(markerSVG("advisory"),"lg.advisory")}${it(`<span class="dot spilled"></span>`,"lg.spilled")}
+    ${it(`<span class="dot ok"></span>`,"lg.ok")}${it(`<div class="cluster" style="width:22px;height:22px">9</div>`,"lg.cluster")}
+    ${P&&Object.keys(P.gauges).length?it(`<svg width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="9" class="rain" fill-opacity=".35" stroke-width="1.5"/></svg>`,"lg.rain"):""}
+    ${MAPDATA.sites.some(s=>s.status!=="live")?it(typeSVG("other",true),"lg.draft"):""}
+    ${(MAPDATA.layers||[]).length?it(`<svg width="24" height="10" aria-hidden="true"><line x1="1" y1="5" x2="23" y2="5" class="wwd-pipe" stroke-width="3"/></svg>`,"lg.pipes"):""}</div></details>`;
+  d.querySelector("details").ontoggle=e=>lsSet("wwd.legend",e.target.open)}
+function hl(key,on){const m=MK.get(key);if(!m)return;
+  if(m.getElement){const e=m.getElement();if(e)e.classList.toggle("hl",on)}else if(m.setStyle)m.setStyle({weight:on?4:1.5});
+  if(on)HL=key;else if(HL===key)HL=null}
+function nearestRain(s){if(!P)return null;let best=null;
+  for(const g of MAPDATA.sites){const mm=P.gauges[g.key];if(mm==null||g.key===s.key)continue;
+    const km=Math.hypot((g.lat-s.lat)*111.2,(g.lon-s.lon)*111.2*Math.cos(s.lat*Math.PI/180));if(km<=15&&(!best||km<best.km))best={name:g.name,mm,km:Math.round(km*10)/10}}
+  return best}
+function peek(s){
+  if(PEEK&&PEEK!==s.key)hl(PEEK,false);PEEK=s.key;hl(s.key,true);map.closePopup();
+  const now=CONF.clock_ms,sp=P?P.spills.filter(x=>x.site===s.key):[],hrs=sp.reduce((a,x)=>a+x.end-x.start,0),al=ALERTS.filter(a=>a.site===s.key);
+  const near=s.site_type==="rain_gauge"?null:nearestRain(s),own=P&&s.key in P.gauges?P.gauges[s.key]:undefined;
+  const el=$("#peek");
+  el.innerHTML=`<button class="x" data-peekx aria-label="${esc(t("m.close"))}">×</button><strong>${esc(s.name)}</strong>
+    <div class="small muted">${esc(t("st."+s.site_type))} · ${esc(sysNames()[s.system]||s.system)}</div>
+    <div class="row" style="margin:6px 0">${stateHTML(s)}</div>
+    <div class="small">${esc(readingText(s))}${lastTs(s)?` <span class="muted">· ${esc(t("si.ago",{d:dur(now/1000-lastTs(s))}))}</span>`:""}</div>
+    ${isOverflow(s)?`<div class="small">${esc(sp.length?t("ov.peek_spills",{n:sp.length,d:dur(hrs)}):t("ov.peek_nospill"))}${P&&P.drySet.has(s.key)?` <span class="chip critical">${esc(t("rule.dry_spill"))}</span>`:""}</div>`:""}
+    ${own!==undefined?`<div class="small">${esc(own==null?t("ov.rain_none",{name:s.name}):t("ov.peek_own_rain",{mm:own}))}</div>`:near?`<div class="small">${esc(t("ov.peek_rain",near))}</div>`:""}
+    ${al.length?`<ul class="peekal small">${al.slice(0,4).map(a=>`<li>${SEV_ICON[a.severity]} ${esc(t("rule."+a.rule))} · ${esc(t("al.for",{dur:dur((now-a.start_ms)/1000)}))}</li>`).join("")}</ul>`:""}
+    <div class="row" style="margin-top:8px"><button class="btn small primary" data-site="${esc(s.key)}">${esc(t("al.open_site"))}</button></div>`;
+  el.hidden=false;el.querySelector("[data-peekx]").onclick=closePeek;
+  if(!map.getBounds().contains([s.lat,s.lon]))map.panTo([s.lat,s.lon])}
+function closePeek(){if(PEEK)hl(PEEK,false);PEEK=null;$("#peek").hidden=true}
+function peekKey(k){const s=MAPDATA&&MAPDATA.sites.find(x=>x.key===k);if(s)peek(s)}
+
+/* the status strip: the numbers a duty officer looks at first */
+function drawStrip(){
+  const el=$("#strip"),st=fl("map",MAPF),now=CONF.clock_ms/1000;if(!MAPDATA){el.innerHTML="";return}
+  const live=MAPDATA.sites.filter(s=>s.status==="live");
+  const spillingNow=live.filter(isSpilling).length,off=live.filter(s=>s.site_type!=="rain_gauge"&&(isOffline(s)||!hasData(s))).length;
+  const hasOverflows=live.some(isOverflow);
+  const tile=(show,n,label,sub,cls)=>`<button class="tile ${cls}" ${show?`data-show="${show}" aria-pressed="${st.show===show}"`:""}><b>${n}</b><span class="l">${esc(label)}</span><span class="s">${esc(sub||"")}</span></button>`;
+  let h="";
+  if(hasOverflows){
+    h+=tile("spilling",spillingNow,t("ov.t.spilling"),t("ov.t.spilling_s"),spillingNow?"warn":"ok");
+    h+=tile("spilled",P?P.spillSet.size:"—",t("ov.t.spilled"),P?t("ov.t.spilled_s",{n:P.spills.length}):"",P&&P.spillSet.size?"warn":"ok");
+    h+=tile("dry",P?P.drySet.size:"—",t("ov.t.dry"),t("ov.t.dry_s"),P&&P.drySet.size?"crit":"ok");
+  }else{const n=s=>ALERTS.filter(a=>a.severity===s).length;
+    h+=tile("attention",live.filter(s=>s.worst).length,t("ov.t.attention"),t("ov.t.attention_s",{c:n("critical"),w:n("warning")}),n("critical")?"crit":n("warning")?"warn":"ok")}
+  h+=tile("offline",off,t("ov.t.offline"),t("ov.t.offline_s"),off?"stale":"ok");
+  if(P&&Object.keys(P.gauges).length){const v=Object.entries(P.gauges).filter(([,mm])=>mm!=null);
+    if(v.length){const mean=v.reduce((a,[,mm])=>a+mm,0)/v.length,mx=v.reduce((a,b)=>b[1]>a[1]?b:a);const g=MAPDATA.sites.find(s=>s.key===mx[0]);
+      h+=`<button class="tile water" data-rain aria-pressed="${!!st.rain}"><b>${mean.toFixed(1)} mm</b><span class="l">${esc(t("ov.t.rain"))}</span><span class="s">${esc(t("ov.t.rain_s",{mm:mx[1],name:g?g.name:mx[0],n:v.length}))}</span></button>`}
+    else h+=`<button class="tile stale" data-rain aria-pressed="${!!st.rain}"><b>—</b><span class="l">${esc(t("ov.t.rain"))}</span><span class="s">${esc(t("ov.t.rain_none"))}</span></button>`}
+  if(PULSE){const fs=PULSE.feeds.filter(f=>f.enabled!==false),stale=f=>f.failing||!f.last_reading||now-f.last_reading>6*3600,bad=fs.filter(stale);
+    const newest=Math.max(0,...fs.map(f=>f.last_reading||0));
+    h+=`<button class="tile ${bad.length?"crit":"ok"}" data-feeds aria-expanded="${!$("#feeds").hidden}"><b>${fs.length-bad.length}/${fs.length}</b><span class="l">${esc(t("ov.t.feeds"))}</span><span class="s">${esc(bad.length?t("ov.t.feeds_bad",{names:bad.map(f=>f.source).join(", ")}):newest?t("ov.t.feeds_s",{time:fmtT(newest*1000)}):"")}</span></button>`;
+    $("#feeds").innerHTML=`<table class="small"><thead><tr><th>${esc(t("fd.source"))}</th><th>${esc(t("fd.type"))}</th><th class="num">${esc(t("fd.sensors"))}</th><th>${esc(t("fd.latest"))}</th><th>${esc(t("fd.read"))}</th><th>${esc(t("fd.state"))}</th></tr></thead><tbody>
+      ${fs.map(f=>`<tr><td class="mono">${esc(f.source)}</td><td>${esc(f.type)}</td><td class="num">${f.sensors}</td><td>${f.last_reading?esc(fmtT(f.last_reading*1000,true))+` <span class="muted">· ${esc(t("si.ago",{d:dur(now-f.last_reading)}))}</span>`:"—"}</td>
+        <td>${f.last_ok_ms?esc(fmtT(f.last_ok_ms,true)):"—"}</td><td>${stale(f)?`<span class="chip ${f.failing?"critical":"draft"}">${esc(t(f.failing?"fd.failing":"fd.stale"))}</span>${f.message?`<div class="muted">${esc(f.message)}</div>`:""}`:`<span class="chip ok">${esc(t("fd.ok"))}</span>`}</td></tr>`).join("")}</tbody></table>
+      <p class="small muted">${esc(t("fd.note"))}</p>`}
+  el.innerHTML=h;
+  el.querySelectorAll("[data-show]").forEach(b=>b.onclick=()=>{st.show=st.show===b.dataset.show?"":b.dataset.show;flSave();$("#mapShow").value=st.show;drawMap(true);drawStrip()});
+  const r=el.querySelector("[data-rain]");if(r)r.onclick=()=>{st.rain=!st.rain;flSave();$("#mapRain").checked=st.rain;drawMarkers();drawRainLayer();drawLegend();drawStrip()};
+  const f=el.querySelector("[data-feeds]");if(f)f.onclick=()=>{$("#feeds").hidden=!$("#feeds").hidden;f.setAttribute("aria-expanded",!$("#feeds").hidden)};
 }
 
-/* ---------- overview ---------- */
+/* alerts beside the map: critical and new ones in full, the rest one line per kind */
 const TOP=6;
 async function refreshAlerts(){
   const list=await alertsList(24);
   ALERTS=list.filter(a=>a.end_ms==null&&!shelvedNow(a)).sort((a,b)=>RANK[a.severity]-RANK[b.severity]||b.start_ms-a.start_ms);
   RECENT=list.filter(a=>a.end_ms!=null&&a.end_ms>CONF.clock_ms-86400e3).sort((a,b)=>b.end_ms-a.end_ms);
-  const n=s=>ALERTS.filter(a=>a.severity===s).length;
+  const n=s=>ALERTS.filter(a=>a.severity===s).length,now=CONF.clock_ms;
   $("#counts").innerHTML=["critical","warning","advisory"].map(s=>`<button class="chip ${s}" data-sev="${s}" title="${esc(t("ov.see_sev",{sev:t("sev."+s)}))}" style="cursor:pointer">${SEV_ICON[s]}${n(s)} ${esc(t("sev."+s))}</button>`).join("");
   $("#counts").querySelectorAll("[data-sev]").forEach(b=>b.onclick=()=>goAlerts(b.dataset.sev));
   $("#allAlerts").textContent=t("ov.see_all",{n:ALERTS.length});$("#allAlerts").onclick=()=>goAlerts("");
-  $("#alerts").innerHTML=ALERTS.length?ALERTS.slice(0,TOP).map(a=>alertCard(a)).join("")+(ALERTS.length>TOP?`<button class="btn small more-link" id="moreAlerts">${esc(t("ov.more_alerts",{n:ALERTS.length-TOP}))}</button>`:"")
-    :`<div class="empty">${SEV_ICON.ok} ${esc(t("ov.none"))}</div>`;
-  if($("#moreAlerts"))$("#moreAlerts").onclick=()=>goAlerts("");
+  const top=ALERTS.filter(a=>a.severity==="critical"||now-a.start_ms<6*36e5).slice(0,TOP),rest=ALERTS.filter(a=>!top.includes(a));
+  const groups=[...rest.reduce((m,a)=>{if(!m.has(a.rule))m.set(a.rule,[]);m.get(a.rule).push(a);return m},new Map())].sort((a,b)=>RANK[a[1][0].severity]-RANK[b[1][0].severity]||b[1].length-a[1].length);
+  const row=a=>`<li data-hl="${esc(a.site||"")}" tabindex="0"><span>${esc(a.site_name||a.system_name||"")}</span><span class="small muted">${esc(dur((now-a.start_ms)/1000))}${a.ack_by?" · ✓":""}</span></li>`;
+  $("#alerts").innerHTML=!ALERTS.length?`<div class="empty">${SEV_ICON.ok} ${esc(t("ov.none"))}</div>`
+    :(top.length?`<h3>${esc(t("ov.new_crit"))}</h3>${top.map(a=>`<div data-hov="${esc(a.site||"")}">${alertCard(a)}</div>`).join("")}`:"")
+    +(groups.length?`${top.length?`<h3>${esc(t("ov.ongoing"))}</h3>`:""}${groups.map(([rule,g])=>`<details class="agroup ${g[0].severity}"${groups.length===1&&g.length<=8?" open":""}><summary><span class="sevdot">${SEV_ICON[g[0].severity]}</span><strong>${g.length} · ${esc(t("rule."+rule))}</strong><span class="grow"></span><span class="small muted">${esc(t("ov.oldest",{d:dur((now-Math.min(...g.map(a=>a.start_ms)))/1000)}))}</span></summary>
+      <ul class="arows">${g.slice(0,60).map(row).join("")}</ul>${g.length>60?`<button class="btn small more-link" data-rule="${esc(rule)}">${esc(t("ov.more_alerts",{n:g.length-60}))}</button>`:""}</details>`).join("")}`:"");
+  $("#alerts").querySelectorAll("[data-hl]").forEach(li=>{const k=li.dataset.hl;if(!k)return;
+    li.onmouseenter=li.onfocus=()=>hl(k,true);li.onmouseleave=li.onblur=()=>{if(PEEK!==k)hl(k,false)};
+    li.onclick=()=>peekKey(k);li.onkeydown=e=>{if(e.key==="Enter")peekKey(k)}});
+  $("#alerts").querySelectorAll("[data-hov]").forEach(d=>{const k=d.dataset.hov;if(!k)return;d.onmouseenter=()=>hl(k,true);d.onmouseleave=()=>{if(PEEK!==k)hl(k,false)}});
+  $("#alerts").querySelectorAll("[data-rule]").forEach(b=>b.onclick=()=>{const st=fl("alerts",{q:"",sev:"",state:"active",rule:"",sort:"sev",desc:false});Object.assign(st,{q:"",sev:"",state:"active",rule:b.dataset.rule});flSave();setView("alerts");render()});
   $("#recentHead").textContent=t("ov.recent_n",{n:RECENT.length});
   $("#recent").innerHTML=RECENT.length?RECENT.slice(0,20).map(a=>alertCard(a)).join(""):`<div class="small muted">${esc(t("setup.none"))}</div>`;
 }
+
+/* the last 24 hours: rain, overflows spilling, sites offline, against time */
+function drawTimeline(){
+  const el=$("#timeline");if(!P||!P.to||!MAPDATA){el.innerHTML="";return}
+  const W=Math.max(320,el.clientWidth||900),from=P.from,to=P.to,span=to-from,X=ts=>(ts-from)/span*W,bins=96,step=span/bins;
+  const distinct=list=>{const c=Array.from({length:bins},()=>new Set());for(const e of list){const a=Math.max(0,Math.floor((e.start-from)/step)),b=Math.min(bins-1,Math.ceil((e.end-from)/step)-1);for(let i=a;i<=b;i++)c[i].add(e.site)}return c.map(s=>s.size)};
+  const sp=distinct(P.spills),off=distinct(P.offline),rain=(PULSE.rain.hourly||[]).filter(([h])=>h>=from-3600&&h<to);
+  const hasRain=rain.length>0,hasSp=MAPDATA.sites.some(isOverflow);
+  const bands=[];let y=0;
+  if(hasRain){bands.push(["rain",y,40]);y+=48}if(hasSp){bands.push(["spills",y,44]);y+=52}bands.push(["offline",y,28]);y+=36;const H=y+18;
+  const area=(c,y0,h,cls)=>{const mx=Math.max(1,...c);let d=`M0 ${y0+h}`;c.forEach((v,i)=>{const yy=y0+h-v/mx*h;d+=` L${(i*step/span*W).toFixed(1)} ${yy.toFixed(1)} L${((i+1)*step/span*W).toFixed(1)} ${yy.toFixed(1)}`});return `<path d="${d} L${W} ${y0+h} Z" class="${cls}"/><text x="${W-4}" y="${y0+10}" text-anchor="end" class="tl-max">${mx>1||c.some(v=>v)?t("tl.max",{n:Math.max(...c)}):""}</text>`};
+  let svg="";
+  for(const [b,y0,h] of bands){svg+=`<line x1="0" x2="${W}" y1="${y0+h}" y2="${y0+h}" class="tl-base"/><text x="4" y="${y0+11}" class="tl-label">${esc(t("tl."+b))}</text>`;
+    if(b==="rain"){const mx=Math.max(.5,...rain.map(r=>r[1]));svg+=rain.map(([hh,mm])=>{const x0=Math.max(0,X(hh)),x1=Math.min(W,X(hh+3600));const hh2=mm/mx*h;return x1>x0?`<rect x="${(x0+.5).toFixed(1)}" y="${(y0+h-hh2).toFixed(1)}" width="${Math.max(1,x1-x0-1).toFixed(1)}" height="${hh2.toFixed(1)}" class="tl-rain"/>`:""}).join("")+`<text x="${W-4}" y="${y0+10}" text-anchor="end" class="tl-max">${esc(t("tl.rain_max",{mm:mx.toFixed(1)}))}</text>`}
+    if(b==="spills"){svg+=area(sp,y0,h,"tl-spill");svg+=P.dry.map(d=>`<path d="M${X(d.start).toFixed(1)} ${y0+h} l-5 9 h10z" class="tl-dry"><title>${esc(t("rule.dry_spill"))}</title></path>`).join("")}
+    if(b==="offline")svg+=area(off,y0,h,"tl-off")}
+  const fmtH=new Intl.DateTimeFormat(LANG==="vi"?"vi-VN":"en-GB",{timeZone:tzOf(),hour:"2-digit",minute:"2-digit"});
+  for(let ts=Math.ceil(from/10800)*10800;ts<=to;ts+=10800){const x=X(ts);svg+=`<line x1="${x}" x2="${x}" y1="0" y2="${H-14}" class="tl-grid"/><text x="${x}" y="${H-2}" text-anchor="middle" class="tl-tick">${esc(fmtH.format(ts*1000))}</text>`}
+  el.innerHTML=`<div class="tl-head"><strong class="small">${esc(t("tl.title"))}</strong><span class="small muted" id="tlRead"></span></div><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t("tl.title"))}">${svg}<line id="tlCur" x1="-9" x2="-9" y1="0" y2="${H-14}" class="tl-cur"/><rect width="${W}" height="${H}" fill="transparent" id="tlHit"/></svg>`;
+  const hit=el.querySelector("#tlHit"),cur=el.querySelector("#tlCur"),rd=el.querySelector("#tlRead"),sv=el.querySelector("svg");
+  const at=e=>{const r=sv.getBoundingClientRect(),x=Math.max(0,Math.min(W,(e.clientX-r.left)*W/r.width)),ts=from+x/W*span,i=Math.min(bins-1,Math.floor((ts-from)/step)),hr=rain.find(([h])=>ts>=h&&ts<h+3600);
+    cur.setAttribute("x1",x);cur.setAttribute("x2",x);
+    rd.textContent=[fmtT(ts*1000,true),hasRain?t("tl.r_rain",{mm:hr?hr[1].toFixed(1):"0.0"}):"",hasSp?t("tl.r_spill",{n:sp[i]}):"",t("tl.r_off",{n:off[i]})].filter(Boolean).join(" · ")};
+  hit.onmousemove=at;hit.onmouseleave=()=>{cur.setAttribute("x1",-9);cur.setAttribute("x2",-9);rd.textContent=""};
+}
+let tlResize;window.addEventListener("resize",()=>{clearTimeout(tlResize);tlResize=setTimeout(()=>{if(VIEW==="overview")drawTimeline()},200)});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&PEEK&&VIEW==="overview")closePeek()});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-peek]");if(b){map.closePopup();peekKey(b.dataset.peek)}});
+
 async function showOverview(){
-  await loadSites();const st=fl("map",{q:"",show:"",type:""});
+  await loadSites();await loadPulse();const st=fl("map",MAPF);
   const types=[...new Set(MAPDATA.sites.map(s=>s.site_type))].sort((a,b)=>t("st."+a).localeCompare(t("st."+b)));
   if(st.type&&!types.includes(st.type))st.type="";
   $("#mapQ").value=st.q;$("#mapQ").placeholder=t("ov.find_map");
   $("#mapShow").innerHTML=showOpts().map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("");$("#mapShow").value=st.show;
   $("#mapType").innerHTML=[["",t("fl.any_type")],...types.map(k=>[k,t("st."+k)])].map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("");$("#mapType").value=st.type;
-  let tm;$("#mapQ").oninput=e=>{st.q=e.target.value;flSave();clearTimeout(tm);tm=setTimeout(drawMap,180)};
-  $("#mapShow").onchange=e=>{st.show=e.target.value;flSave();drawMap()};$("#mapType").onchange=e=>{st.type=e.target.value;flSave();drawMap()};
-  drawMap();drawLegend();await refreshAlerts();drawRain();
-  if(!MAPDATA.sites.length)$("#alerts").innerHTML=`<div class="empty">${esc(t("ov.no_sites"))}</div>`;
+  $("#mapRain").checked=!!st.rain;$("#mapRainL").hidden=!(P&&Object.keys(P.gauges).length);
+  let tm;$("#mapQ").oninput=e=>{st.q=e.target.value;flSave();clearTimeout(tm);tm=setTimeout(()=>{drawMap();drawStrip()},180)};
+  $("#mapShow").onchange=e=>{st.show=e.target.value;flSave();drawMap();drawStrip()};$("#mapType").onchange=e=>{st.type=e.target.value;flSave();drawMap()};
+  $("#mapRain").onchange=e=>{st.rain=e.target.checked;flSave();drawMarkers();drawRainLayer();drawLegend();drawStrip()};
+  drawStrip();drawMap();drawLegend();await refreshAlerts();drawStrip();drawTimeline();
+  if(PEEK){const s=MAPDATA.sites.find(x=>x.key===PEEK);if(s)peek(s);else closePeek()}
 }
+async function refreshOverview(){await loadSites();await loadPulse();SHOWN=mapShown();drawMarkers();drawRainLayer();await refreshAlerts();drawStrip();drawTimeline()}
 
 /* ---------- site ---------- */
 function schematic(s){
@@ -768,8 +946,8 @@ function stateHTML(s){const k=siteState(s);
   return (RANK[k]<3?sevChip(k):`<span class="chip ${k==="ok"?"ok":"draft"}">${esc(t("si.s."+k))}</span>`)
     +(isSpilling(s)?` <span class="chip warning">${esc(t("si.s.spilling"))}</span>`:"")+(isOffline(s)&&k!=="offline"?` <span class="chip draft">${esc(t("si.s.offline"))}</span>`:"")}
 const stateText=s=>[t(RANK[siteState(s)]<3?"sev."+siteState(s):"si.s."+siteState(s)),isSpilling(s)?t("si.s.spilling"):"",isOffline(s)&&siteState(s)!=="offline"?t("si.s.offline"):""].filter(Boolean).join(", ");
-function showMatch(s,show){return !show||(show==="attention"?s.status==="live"&&!!s.worst:show==="spilling"?isSpilling(s):show==="offline"?s.status==="live"&&(isOffline(s)||!hasData(s)):show==="ok"?siteState(s)==="ok":show==="draft"?s.status!=="live":true)}
-const showOpts=()=>[["",t("ov.f.all")],["attention",t("ov.f.attention")],["spilling",t("ov.f.spilling")],["offline",t("ov.f.offline")],["ok",t("ov.f.ok")],["draft",t("ov.f.draft")]];
+function showMatch(s,show){return !show||(show==="attention"?s.status==="live"&&!!s.worst:show==="spilling"?isSpilling(s):show==="offline"?s.status==="live"&&(isOffline(s)||!hasData(s)):show==="ok"?siteState(s)==="ok":show==="draft"?s.status!=="live":show==="spilled"?!!(P&&P.spillSet.has(s.key)):show==="dry"?!!(P&&P.drySet.has(s.key)):true)}
+const showOpts=()=>[["",t("ov.f.all")],["attention",t("ov.f.attention")],["spilling",t("ov.f.spilling")],["spilled",t("ov.f.spilled")],["dry",t("ov.f.dry")],["offline",t("ov.f.offline")],["ok",t("ov.f.ok")],["draft",t("ov.f.draft")]];
 const lastTs=s=>{const v=Math.max(0,...(s.readings||[]).map(r=>r.ts||0));return v||null};
 function readingText(s){const r=(s.readings||[]).find(r=>r.value!=null);return r?`${r.name}: ${show({...r,site_type:s.site_type},r.value,r.quality)}`:"—"}
 const sysNames=()=>Object.fromEntries((TREE?TREE.regions:[]).flatMap(r=>r.systems.map(s=>[s.key,s.name])));
@@ -782,7 +960,7 @@ async function loadSites(){
 /* ---------- sites ---------- */
 async function showSites(){
   const el=$("#v-sites");el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
-  const d=await loadSites(),names=sysNames(),now=CONF.clock_ms/1000;
+  const d=await loadSites(),names=sysNames(),now=CONF.clock_ms/1000;await loadPulse();
   const types=[...new Set(d.sites.map(s=>s.site_type))].sort((a,b)=>t("st."+a).localeCompare(t("st."+b)));
   const systems=[...new Set(d.sites.map(s=>s.system))];
   const st=fl("sites",{q:"",show:"",type:"",system:"",sort:"state",desc:false});
@@ -866,8 +1044,11 @@ async function start(){
   $("#you").value=prefs.name||"";$("#pass").hidden=!CONF.write_protected||!!ST;if(ST){$("#you").hidden=true}
   applyWords();await reloadTree();CONF.clock_ms=clockFor();
   const banners=()=>{if(ST||CONF.clock_mode!=="now"){$("#clock").textContent=t("clock.judged",{time:fmtT(CONF.clock_ms,true)})}
-    if(ST){$("#demo").hidden=false;$("#demo").textContent=t("demo.banner",{time:fmtT(CONF.clock_ms,true)})}};banners();
-  $("#foot").innerHTML=`Waterworks Desk ${esc(CONF.version)}${(CONF.credits||[]).length?" · "+esc(t("credits"))+": "+CONF.credits.map(c=>c.url?`<a href="${esc(c.url)}" rel="noopener">${esc(c.text)}</a>`:esc(c.text)).join(" · "):""}`;
+    if(ST){$("#demo").hidden=false;$("#demo").textContent=t("demo.banner",{time:fmtT(CONF.clock_ms,true)})}
+    $("#clock").hidden=!!ST&&!$("#notice").hidden};
+  if(lsGet("wwd.notice",0)>Date.now())$("#notice").hidden=true;
+  $("#noticeX").onclick=()=>{$("#notice").hidden=true;lsSet("wwd.notice",Date.now()+7*864e5);banners()};banners();
+  $("#foot").innerHTML=`<div>${esc(t("safety"))}</div>Waterworks Desk ${esc(CONF.version)}${(CONF.credits||[]).length?" · "+esc(t("credits"))+": "+CONF.credits.map(c=>c.url?`<a href="${esc(c.url)}" rel="noopener">${esc(c.text)}</a>`:esc(c.text)).join(" · "):""}`;
   $$("nav.tabs button").forEach(b=>b.onclick=()=>{setView(b.dataset.view);render()});
   $("#sysPick").onchange=e=>{SYS=e.target.value;savePrefs();CONF.clock_ms=clockFor();banners();if(VIEW==="site")setView("overview");render()};
   $("#lang").onchange=async e=>{await loadLang(e.target.value);savePrefs();applyWords();banners();await reloadTree();$("#find").placeholder=t("find.ph");
@@ -876,7 +1057,7 @@ async function start(){
   const hs=hashSite();if(hs){await openSite(hs)}else{setView("overview");await render()}
   window.addEventListener("hashchange",()=>{const k=hashSite();if(k&&(k!==SITE||VIEW!=="site"))openSite(k)});
   if(!ST)setInterval(()=>{if($("#dlg").open||document.activeElement&&document.activeElement.matches("input,select"))return;
-    if(VIEW==="overview")refreshAlerts().catch(()=>{});else if(VIEW==="alerts")showAlerts().catch(()=>{})},60000);
+    if(VIEW==="overview")refreshOverview().catch(()=>{});else if(VIEW==="alerts")showAlerts().catch(()=>{})},60000);
 }
 start().catch(e=>{document.querySelector("main").innerHTML=`<div class="empty">Couldn't start: ${esc(e.message)}</div>`});
 })();

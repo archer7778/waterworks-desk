@@ -14,6 +14,7 @@ Read endpoints
   GET /api/sites/<key>                  one site: components, sensors, latest readings, alerts
   GET /api/sensors/<key>/readings?from=&to=&res=auto|raw|60|900|3600|86400
   GET /api/alerts?system=&shelved=1&ended_hours=24
+  GET /api/pulse?hours=24               the last day: feed freshness, rain, spills, outages (the Overview)
   GET /api/spills?system=&days=30          per overflow: spills (12/24 method), hours, possible dry-day spills (days=0: all data)
   GET /api/setup/item?kind=&key=        one item as an editable form
   GET /api/setup/pending                changes to live items waiting to be applied
@@ -310,6 +311,49 @@ class App:
             out["days"] = int(days or 0)
             return out
 
+    def pulse(self, hours=24):
+        """The last day at a glance, for the Overview: how fresh each data feed is, rain per gauge
+        and per hour, overflow spill periods, monitor outages and possible dry-day spills."""
+        hours = max(1, min(int(hours), 168))
+        end = max(self.clocks().values() or [self.clock_ms()]) // 1000
+        start = end - hours * 3600
+        with self.ro() as c:
+            feeds = []
+            for s in self.cfg.sources:
+                k = s["key"]
+                n, last = c.execute("SELECT COUNT(*), MAX((SELECT MAX(ts) FROM readings WHERE sensor_id=x.id)) FROM sensors x "
+                                    "WHERE x.source=? AND x.status='live'", (k,)).fetchone()
+                ok_ms = c.execute("SELECT MAX(t_ms) FROM imports WHERE source=? AND ok=1", (k,)).fetchone()[0]
+                lastrun = c.execute("SELECT ok, message, t_ms FROM imports WHERE source=? ORDER BY id DESC LIMIT 1", (k,)).fetchone()
+                feeds.append({"source": k, "type": s.get("type"), "enabled": s.get("enabled", True), "sensors": n,
+                              "last_reading": last, "last_ok_ms": ok_ms, "failing": bool(lastrun and not lastrun[0]),
+                              "message": (lastrun[1] if lastrun and not lastrun[0] else "")[:200]})
+            gauges, hourly = {}, {}
+            for r in c.execute("SELECT x.id, s.key, x.expected_interval_s FROM sensors x JOIN sites s ON s.id=x.site_id "
+                               "WHERE x.quantity='rain' AND x.status='live' AND s.status='live'").fetchall():
+                rows = c.execute("SELECT ts, value FROM readings WHERE sensor_id=? AND ts>? AND ts<=? AND quality!=?",
+                                 (r[0], start, end, dbm.BAD)).fetchall()
+                every = r[2] or 900
+                gauges[r[1]] = round(sum(v for _, v in rows), 1) if len(rows) >= 0.5 * hours * 3600 / every else None
+                if gauges[r[1]] is not None:
+                    for ts, v in rows:
+                        h = (ts - 1) // 3600 * 3600
+                        tot = hourly.setdefault(h, {})
+                        tot[r[1]] = tot.get(r[1], 0) + v
+            spill = []
+            for r in c.execute("SELECT x.id, s.key FROM sensors x JOIN sites s ON s.id=x.site_id "
+                               "WHERE x.quantity='state' AND x.status='live' AND s.status='live'").fetchall():
+                spill += [{"site": r[1], "start": a, "end": b} for a, b in spills.periods(c, r[0], start, end)]
+            def outages(rules):
+                q = (f"SELECT s.key, a.start_ms, a.end_ms, a.rule FROM alerts a JOIN sites s ON s.id=a.site_id WHERE a.rule IN "
+                     f"({','.join('?' * len(rules))}) AND a.start_ms<=? AND (a.end_ms IS NULL OR a.end_ms>?)")
+                return [{"site": k, "start": max(a // 1000, start), "end": min((b or end * 1000) // 1000, end), "rule": ru}
+                        for k, a, b, ru in c.execute(q, (*rules, end * 1000, start * 1000))]
+            return {"from": start, "to": end, "hours": hours, "feeds": feeds,
+                    "rain": {"gauges": gauges, "hourly": [[h, round(sum(v.values()) / len(v), 2), len(v)] for h, v in sorted(hourly.items())]},
+                    "spills": spill, "offline": outages(("monitor_offline", "silent", "site_silent")),
+                    "dry": [{"site": o["site"], "start": o["start"]} for o in outages(("dry_spill",))]}
+
     def unmapped(self):
         with self.ro() as c:
             return {s: dbm.meta_get(c, f"unmapped:{s}", {}) for s in sorted(self.known_sources)}
@@ -455,6 +499,8 @@ def make_handler(app):
                 if p == "/api/alerts":
                     return self._json(app.alerts(q.get("system") or None, q.get("shelved") == "1",
                                                  min(_int(q, "ended_hours") or 0, 24 * 90)))
+                if p == "/api/pulse":
+                    return self._json(app.pulse(_int(q, "hours") or 24))
                 if p == "/api/spills":
                     d = _int(q, "days")
                     return self._json(app.spills(q.get("system") or None, 30 if d is None else max(0, min(d, 3650))))

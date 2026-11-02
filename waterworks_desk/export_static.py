@@ -35,6 +35,7 @@ def export(cfg, out, log=print):
     conf.update(static=True, write_protected=False)
     _w(api / "config.json", conf)
     _w(api / "tree.json", app.tree())
+    _w(api / "pulse.json", app.pulse(24))
     m = app.map()
     _w(api / "map.json", m)
     clocks = app.clocks()                                   # each system judged at its own time (demo mode)
