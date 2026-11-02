@@ -470,5 +470,7 @@
  "tl.r_off": "{n} mất kết nối",
  "m.retry": "Thử lại",
  "m.part_error": "Không vẽ được phần này. Phần còn lại của trang không bị ảnh hưởng; tải lại trang để thử lại.",
- "demo.stale": "Ảnh chụp này được làm mới lần cuối {ago} trước. Việc tự động làm mới mỗi ba giờ có vẻ đã dừng, nên dữ liệu có thể đã cũ."
+ "demo.stale": "Ảnh chụp này được làm mới lần cuối {ago} trước. Việc tự động làm mới mỗi ba giờ có vẻ đã dừng, nên dữ liệu có thể đã cũ.",
+ "conn.lost": "Không kết nối được máy chủ từ {time}. Dữ liệu đang hiển thị có thể đã cũ; trang sẽ tự kết nối lại.",
+ "conn.stale": "Không có số đọc mới từ {time} (lẽ ra cứ {n} phút có một lần). Hãy kiểm tra dịch vụ đọc dữ liệu; cảnh báo không được cập nhật."
 }

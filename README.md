@@ -48,6 +48,11 @@ python -m waterworks_desk.server          # http://127.0.0.1:8080
 ```
 
 On a Debian-based machine (a Raspberry Pi included), `./deploy/install.sh` installs it as services.
+`GET /api/health` answers whether the server is up (`ok`) and whether data is still arriving
+(`data_ok` is false when nothing has been read for three polling intervals); point any uptime
+monitor at it. An open console checks it every minute: its clock moves on, and it says plainly
+when it can't reach the server or when readings have stopped, instead of leaving old numbers on
+screen. A reading run that hangs is stopped after 30 minutes so the next one can go ahead.
 Automatic updates are **off** by default; update by hand after reviewing changes with
 `sudo deploy/update.sh --now`.
 

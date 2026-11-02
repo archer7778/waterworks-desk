@@ -470,5 +470,7 @@
  "tl.r_off": "{n} offline",
  "m.retry": "Try again",
  "m.part_error": "This part couldn't be drawn. The rest of the page is unaffected; reload to try again.",
- "demo.stale": "This snapshot was last refreshed {ago} ago. The automatic refresh every three hours seems to have stopped, so what you see may be out of date."
+ "demo.stale": "This snapshot was last refreshed {ago} ago. The automatic refresh every three hours seems to have stopped, so what you see may be out of date.",
+ "conn.lost": "Can't reach the console server since {time}. What you see may be out of date; it reconnects by itself.",
+ "conn.stale": "No new readings have been read since {time} (they should arrive every {n} minutes). Check the ingest service; alerts are not being updated."
 }

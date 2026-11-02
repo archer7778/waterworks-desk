@@ -6,7 +6,7 @@ always says who made them. Named accounts replace the passcode in M2. Changes to
 already live wait as pending changes until someone applies them.
 
 Read endpoints
-  GET /api/health                       for the updater and monitoring
+  GET /api/health                       for the updater and monitoring: server up, and data still arriving
   GET /api/config                       what the console needs to draw itself (types, units, map tiles)
   GET /api/tree                         regions > systems > zones and sites, with counts
   GET /api/map?system=                  sites with positions, worst open alert and key readings
@@ -354,6 +354,20 @@ class App:
                     "spills": spill, "offline": outages(("monitor_offline", "silent", "site_silent")),
                     "dry": [{"site": o["site"], "start": o["start"]} for o in outages(("dry_spill",))]}
 
+    def health(self):
+        """Is the server up (ok), and is data still being read (data_ok)? Monitoring and the open
+        console poll this: reading stopping must never be silent."""
+        poll = float(self.cfg["ingest"].get("poll_minutes", 5))
+        enabled = [s["key"] for s in self.cfg.sources if s.get("enabled", True)]
+        with self.ro() as c:
+            last = c.execute("SELECT MAX(t_ms) FROM imports WHERE ok=1 AND source!='manual'").fetchone()[0]
+        now = dbm.now_ms()
+        late_ms = (3 * poll + 2) * 60_000
+        live = str(self.cfg["alerts"]["clock"]) == "now"
+        data_ok = not enabled or not live or (last is not None and now - last <= late_ms)
+        return {"ok": True, "version": __version__, "started_ms": STARTED, "now_ms": now, "clock_ms": self.clock_ms(),
+                "clocks": self.clocks(), "last_read_ms": last, "poll_minutes": poll, "data_ok": data_ok}
+
     def unmapped(self):
         with self.ro() as c:
             return {s: dbm.meta_get(c, f"unmapped:{s}", {}) for s in sorted(self.known_sources)}
@@ -477,7 +491,7 @@ def make_handler(app):
             p = u.path
             try:
                 if p == "/api/health":
-                    return self._json({"ok": True, "version": __version__, "started_ms": STARTED})
+                    return self._json(app.health())
                 if p == "/api/config":
                     return self._json(app.config())
                 if p == "/api/tree":

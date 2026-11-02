@@ -10,6 +10,9 @@ WorkingDirectory=@ROOT@
 Environment=WATERWORKS_DESK_CONFIG=@ROOT@/config.toml
 ExecStart=@ROOT@/.venv/bin/python -m waterworks_desk.ingest
 Nice=10
+# A run that hangs (a network call that never returns) is stopped, which releases the lock so
+# the next run goes ahead. Long enough for a first import of years of CSV exports.
+TimeoutStartSec=30min
 
 # Sandboxing: no privilege gain, a private /tmp, and the operating system read-only.
 NoNewPrivileges=yes

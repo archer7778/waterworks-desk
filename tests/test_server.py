@@ -130,3 +130,42 @@ def test_no_passcode_still_needs_a_name():
         assert code == 200
     finally:
         httpd.shutdown()
+
+
+def test_health_says_when_data_stops_arriving():
+    tmp, cfg, conn = make_env(CSV_SOURCE)
+    app = server.App(cfg)
+    h = app.health()
+    assert h["ok"] and h["data_ok"] is False and h["last_read_ms"] is None   # a source is set up and nothing read yet
+    from waterworks_desk import db as dbm
+    dbm.record_import(conn, "exports", "a.csv", True, 1, 1, 0, "")
+    assert app.health()["data_ok"] is True
+    conn.execute("UPDATE imports SET t_ms=t_ms-3600000")                    # last good read an hour ago
+    conn.commit()
+    h = app.health()
+    assert h["data_ok"] is False and h["clock_ms"] > 0 and h["poll_minutes"] == 5
+    dbm.record_import(conn, "manual", "x", True, 1, 1, 0, "")                 # a reading typed in doesn't count
+    assert app.health()["data_ok"] is False
+
+
+def test_rain_feed_keeps_to_its_time_budget(monkeypatch):
+    from waterworks_desk.sources import ea_rain
+    tmp, cfg, conn = make_env()
+    conn.execute("INSERT INTO regions(key,name,created_ms) VALUES('r','R',0)")
+    conn.execute("INSERT INTO systems(key,region_id,name,network_type,created_ms,updated_ms) VALUES('s',1,'S','storm_drain',0,0)")
+    for i in range(5):
+        conn.execute("INSERT INTO sites(key,system_id,name,site_type,lat,lon,created_ms,updated_ms) VALUES(?,1,'G','rain_gauge',51,0,0,0)", (f"g{i}",))
+        conn.execute("INSERT INTO sensors(key,site_id,name,quantity,unit,source,source_tag,created_ms,updated_ms) VALUES(?,?,'R','rain','mm','ea',?,0,0)",
+                     (f"g{i}-r", i + 1, f"S{i}"))
+    conn.commit()
+    calls = []
+    clock = [1000.0]
+    monkeypatch.setattr(ea_rain.time, "time", lambda: clock[0])
+    def slow(url, tries=2, timeout=20):
+        calls.append(url)
+        clock[0] += 40          # each station takes 40 s
+        return {"items": []}
+    monkeypatch.setattr(ea_rain, "get_json", slow)
+    ad = ea_rain.EARain(None, {"key": "ea", "type": "ea_rain", "budget_seconds": 100})
+    b = next(ad.batches(conn))
+    assert len(calls) == 3 and any("left for the next run" in p for p in b.problems)

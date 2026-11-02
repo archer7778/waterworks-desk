@@ -68,17 +68,25 @@ class EARain(Adapter):
         if not stations:
             return
         first = int(self.source.get("first_days", 7))
-        items, problems = [], []
-        for ref in sorted(stations):
+        budget = float(self.source.get("budget_seconds", 300))   # the rest wait for the next run
+        items, problems, t0, left = [], [], time.time(), 0
+        for ref in sorted(stations, key=lambda r: conn.execute(
+                "SELECT COALESCE(MAX(r.ts),0) FROM readings r JOIN sensors s ON s.id=r.sensor_id WHERE s.source=? AND s.source_tag=?",
+                (self.key, r)).fetchone()[0]):                    # the longest-waiting gauges first
+            if time.time() - t0 > budget:
+                left += 1
+                continue
             last = conn.execute("SELECT MAX(r.ts) FROM readings r JOIN sensors s ON s.id=r.sensor_id "
                                 "WHERE s.source=? AND s.source_tag=?", (self.key, ref)).fetchone()[0]
             since = max(last - 3600 if last else int(time.time()) - first * 86400, int(time.time()) - 27 * 86400)
             iso = datetime.fromtimestamp(since, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             url = f"{api}/id/stations/{urllib.parse.quote(ref)}/readings?_sorted&_limit=5000&since={iso}"
             try:
-                items += get_json(url, tries=2).get("items") or []
+                items += get_json(url, tries=2, timeout=20).get("items") or []
             except Exception as e:   # one gauge failing never stops the others
                 problems.append(f"{ref}: {type(e).__name__}: {e}"[:160])
+        if left:
+            problems.append(f"{left} station(s) left for the next run (time budget {budget:.0f} s)")
         b = Batch(f"{len(stations)} stations", items)
         b.problems, b.skipped = problems[:8], len(problems)
         yield b

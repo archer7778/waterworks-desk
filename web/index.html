@@ -185,6 +185,7 @@ details.sys>summary{cursor:pointer;color:var(--muted);font-size:13px;margin:4px 
 </head>
 <body>
 <div id="stale" class="banner warn" role="alert" hidden></div>
+<div id="conn" class="banner warn" role="alert" hidden></div>
 <div id="notice" class="banner"><span id="demo" hidden></span><span data-t="safety"></span><button id="noticeX" class="x" type="button" aria-label="Close">×</button></div>
 <header class="top">
   <div class="brand">
@@ -1069,8 +1070,23 @@ async function start(){
   $("#you").onchange=savePrefs;setupFind();$("#find").placeholder=t("find.ph");
   const hs=hashSite();if(hs){await openSite(hs)}else{setView("overview");await render()}
   window.addEventListener("hashchange",()=>{const k=hashSite();if(k&&(k!==SITE||VIEW!=="site"))openSite(k)});
-  if(!ST)setInterval(()=>{if($("#dlg").open||document.activeElement&&document.activeElement.matches("input,select"))return;
-    if(VIEW==="overview")refreshOverview().catch(()=>{});else if(VIEW==="alerts")showAlerts().catch(()=>{})},60000);
+  if(!ST){
+    /* A console left open for a shift: the clock moves on, the views refresh, and losing the
+       server or the data feed is said out loud rather than leaving old numbers on screen. */
+    let lostSince=null,busy=false;
+    const tick=async()=>{if(busy)return;busy=true;try{
+      let h=null;try{h=await api("/api/health");lostSince=null}catch(e){lostSince=lostSince||Date.now()}
+      const c=$("#conn");
+      if(lostSince){c.hidden=false;c.textContent=t("conn.lost",{time:fmtT(lostSince,true)});return}
+      if(CONF.clock_mode==="now"){CONF.clock_ms=h.clock_ms;CONF.clocks=h.clocks||CONF.clocks;CONF.clock_all=h.clock_ms;CONF.clock_ms=clockFor();banners()}
+      if(!h.data_ok){c.hidden=false;c.textContent=t("conn.stale",{time:h.last_read_ms?fmtT(h.last_read_ms,true):"—",n:h.poll_minutes})}else c.hidden=true;
+      if($("#dlg").open)return;
+      if(VIEW==="overview")await refreshOverview();
+      else if(VIEW==="alerts"&&!(document.activeElement&&document.activeElement.closest("#v-alerts")&&document.activeElement.matches("input,select")))await showAlerts();
+    }catch(e){console.error(e)}finally{busy=false}};
+    setInterval(tick,60000);tick();
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)tick()});
+  }
 }
 start().catch(e=>{document.querySelector("main").innerHTML=`<div class="empty">Couldn't start: ${esc(e.message)}</div>`});
 })();
