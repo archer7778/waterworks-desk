@@ -503,7 +503,7 @@
   {
    "key": "ltown-t1-level",
    "site": "ltown-t1",
-   "name": "Tank T1 level",
+   "name": "Water level",
    "quantity": "level",
    "source": "ltown",
    "source_tag": "T1",
@@ -532,7 +532,7 @@
    "key": "ltown-meter-p227-flow",
    "site": "ltown-meter-p227",
    "component": "ltown-meter-p227-fm",
-   "name": "District inlet meter (p227) flow",
+   "name": "Inflow",
    "quantity": "flow",
    "source": "ltown",
    "source_tag": "p227",
@@ -543,7 +543,7 @@
    "key": "ltown-meter-p235-flow",
    "site": "ltown-meter-p235",
    "component": "ltown-meter-p235-fm",
-   "name": "District inlet meter (p235) flow",
+   "name": "Inflow",
    "quantity": "flow",
    "source": "ltown",
    "source_tag": "p235",
@@ -553,7 +553,7 @@
   {
    "key": "ltown-pl-n1-p",
    "site": "ltown-pl-n1",
-   "name": "Network pressure at n1",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n1",
@@ -569,7 +569,7 @@
   {
    "key": "ltown-pl-n4-p",
    "site": "ltown-pl-n4",
-   "name": "Network pressure at n4",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n4",
@@ -585,7 +585,7 @@
   {
    "key": "ltown-pl-n31-p",
    "site": "ltown-pl-n31",
-   "name": "Network pressure at n31",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n31",
@@ -601,7 +601,7 @@
   {
    "key": "ltown-pl-n54-p",
    "site": "ltown-pl-n54",
-   "name": "Network pressure at n54",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n54",
@@ -617,7 +617,7 @@
   {
    "key": "ltown-pl-n105-p",
    "site": "ltown-pl-n105",
-   "name": "Network pressure at n105",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n105",
@@ -633,7 +633,7 @@
   {
    "key": "ltown-pl-n114-p",
    "site": "ltown-pl-n114",
-   "name": "Network pressure at n114",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n114",
@@ -649,7 +649,7 @@
   {
    "key": "ltown-pl-n163-p",
    "site": "ltown-pl-n163",
-   "name": "Network pressure at n163",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n163",
@@ -665,7 +665,7 @@
   {
    "key": "ltown-pl-n188-p",
    "site": "ltown-pl-n188",
-   "name": "Network pressure at n188",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n188",
@@ -681,7 +681,7 @@
   {
    "key": "ltown-pl-n215-p",
    "site": "ltown-pl-n215",
-   "name": "Network pressure at n215",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n215",
@@ -697,7 +697,7 @@
   {
    "key": "ltown-pl-n229-p",
    "site": "ltown-pl-n229",
-   "name": "Network pressure at n229",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n229",
@@ -713,7 +713,7 @@
   {
    "key": "ltown-pl-n288-p",
    "site": "ltown-pl-n288",
-   "name": "Network pressure at n288",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n288",
@@ -729,7 +729,7 @@
   {
    "key": "ltown-pl-n296-p",
    "site": "ltown-pl-n296",
-   "name": "Network pressure at n296",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n296",
@@ -745,7 +745,7 @@
   {
    "key": "ltown-pl-n332-p",
    "site": "ltown-pl-n332",
-   "name": "Network pressure at n332",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n332",
@@ -761,7 +761,7 @@
   {
    "key": "ltown-pl-n342-p",
    "site": "ltown-pl-n342",
-   "name": "Network pressure at n342",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n342",
@@ -777,7 +777,7 @@
   {
    "key": "ltown-pl-n410-p",
    "site": "ltown-pl-n410",
-   "name": "Network pressure at n410",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n410",
@@ -793,7 +793,7 @@
   {
    "key": "ltown-pl-n415-p",
    "site": "ltown-pl-n415",
-   "name": "Network pressure at n415",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n415",
@@ -809,7 +809,7 @@
   {
    "key": "ltown-pl-n429-p",
    "site": "ltown-pl-n429",
-   "name": "Network pressure at n429",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n429",
@@ -825,7 +825,7 @@
   {
    "key": "ltown-pl-n458-p",
    "site": "ltown-pl-n458",
-   "name": "Network pressure at n458",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n458",
@@ -841,7 +841,7 @@
   {
    "key": "ltown-pl-n469-p",
    "site": "ltown-pl-n469",
-   "name": "Network pressure at n469",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n469",
@@ -857,7 +857,7 @@
   {
    "key": "ltown-pl-n495-p",
    "site": "ltown-pl-n495",
-   "name": "Network pressure at n495",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n495",
@@ -873,7 +873,7 @@
   {
    "key": "ltown-pl-n506-p",
    "site": "ltown-pl-n506",
-   "name": "Network pressure at n506",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n506",
@@ -889,7 +889,7 @@
   {
    "key": "ltown-pl-n516-p",
    "site": "ltown-pl-n516",
-   "name": "Network pressure at n516",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n516",
@@ -905,7 +905,7 @@
   {
    "key": "ltown-pl-n519-p",
    "site": "ltown-pl-n519",
-   "name": "Network pressure at n519",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n519",
@@ -921,7 +921,7 @@
   {
    "key": "ltown-pl-n549-p",
    "site": "ltown-pl-n549",
-   "name": "Network pressure at n549",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n549",
@@ -937,7 +937,7 @@
   {
    "key": "ltown-pl-n613-p",
    "site": "ltown-pl-n613",
-   "name": "Network pressure at n613",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n613",
@@ -953,7 +953,7 @@
   {
    "key": "ltown-pl-n636-p",
    "site": "ltown-pl-n636",
-   "name": "Network pressure at n636",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n636",
@@ -969,7 +969,7 @@
   {
    "key": "ltown-pl-n644-p",
    "site": "ltown-pl-n644",
-   "name": "Network pressure at n644",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n644",
@@ -985,7 +985,7 @@
   {
    "key": "ltown-pl-n679-p",
    "site": "ltown-pl-n679",
-   "name": "Network pressure at n679",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n679",
@@ -1001,7 +1001,7 @@
   {
    "key": "ltown-pl-n722-p",
    "site": "ltown-pl-n722",
-   "name": "Network pressure at n722",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n722",
@@ -1017,7 +1017,7 @@
   {
    "key": "ltown-pl-n726-p",
    "site": "ltown-pl-n726",
-   "name": "Network pressure at n726",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n726",
@@ -1033,7 +1033,7 @@
   {
    "key": "ltown-pl-n740-p",
    "site": "ltown-pl-n740",
-   "name": "Network pressure at n740",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n740",
@@ -1049,7 +1049,7 @@
   {
    "key": "ltown-pl-n752-p",
    "site": "ltown-pl-n752",
-   "name": "Network pressure at n752",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n752",
@@ -1065,7 +1065,7 @@
   {
    "key": "ltown-pl-n769-p",
    "site": "ltown-pl-n769",
-   "name": "Network pressure at n769",
+   "name": "Pressure",
    "quantity": "pressure",
    "source": "ltown",
    "source_tag": "n769",

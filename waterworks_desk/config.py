@@ -18,8 +18,12 @@ DEFAULTS = {
     "ingest": {"poll_minutes": 5},
     "notify": {"ntfy_topic": "", "ntfy_server": "https://ntfy.sh", "console_url": "", "summary_hour": 7},
     "updates": {"auto_update": False},  # never self-update near a real utility network
+    "alerts": {"clock": "now"},         # "now"; "data_end" for a historical demo; or an ISO time
+    "console": {"title": "Waterworks Desk", "language": "en"},
+    "map": {"tile_url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            "attribution": "© OpenStreetMap contributors", "max_zoom": 19},
 }
-SOURCE_TYPES = {"csv"}
+SOURCE_TYPES = {"csv", "open_meteo"}
 KEY_RE = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,62}$")
 
 

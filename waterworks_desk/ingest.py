@@ -18,7 +18,7 @@ import time
 from datetime import datetime, timezone
 
 from . import db as dbm
-from . import logchain, model, sources, units
+from . import alerts, logchain, model, notify, sources, units
 from .config import find_config
 
 CHUNK = 20_000
@@ -153,6 +153,8 @@ def run(cfg, conn, only=None, force=False, log=print):
     gone = retention(conn, cfg)
     if gone:
         log(f"Retention: removed {gone} raw readings past {cfg['storage']['raw_days']} days (rollups kept).")
+    changes = alerts.evaluate(conn, cfg, log=log)
+    notify.alerts_changed(cfg, changes, log)
     return total
 
 
@@ -173,6 +175,12 @@ def manual_reading(conn, sensor_key, value, actor, unit=None, ts=None):
     conn.commit()
     dbm.record_import(conn, "manual", sensor_key, True, 1, stored, 0, f"entered by {actor}")
     return {"sensor": sensor_key, "ts": ts, "value": v, "unit": r["unit"]}
+
+
+def manual_reading_and_alerts(conn, cfg, *a, **k):
+    res = manual_reading(conn, *a, **k)
+    notify.alerts_changed(cfg, alerts.evaluate(conn, cfg), None)
+    return res
 
 
 def main(argv=None):

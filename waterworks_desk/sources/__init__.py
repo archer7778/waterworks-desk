@@ -7,8 +7,9 @@ runs network adapters against a trap server that fails on any write.
 """
 from .base import Adapter, Reading  # noqa: F401
 from .csvfile import CsvFolder
+from .openmeteo import OpenMeteo
 
-ADAPTERS = {"csv": CsvFolder}
+ADAPTERS = {"csv": CsvFolder, "open_meteo": OpenMeteo}
 
 
 def make(cfg, source):

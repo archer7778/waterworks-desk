@@ -38,3 +38,17 @@ timezone = "UTC"            # time zone of the timestamps in the files
 # decimal = "auto"          # "." or "," (28,92); worked out unless set
 # timestamp_column = "Timestamp"
 # timestamp_format = "%d/%m/%Y %H:%M"
+
+[console]
+title = "Waterworks Desk"
+language = "en"             # "en" or "vi"; each viewer can switch
+
+[map]
+# The public OpenStreetMap tiles are fine for a demo or light use. A control room should use its
+# own tile server or offline tiles (see the OpenStreetMap tile usage policy).
+tile_url = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+attribution = "© OpenStreetMap contributors"
+max_zoom = 19
+
+[alerts]
+clock = "now"               # "data_end" judges a historical dataset at its last reading

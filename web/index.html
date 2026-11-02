@@ -2,40 +2,606 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Waterworks Desk</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <style>
-  :root { --bg:#f7f8f6; --fg:#16201d; --muted:#5d6b66; --line:#d9dfdc; --card:#fff; --live:#1d7a4f; --draft:#9a6a00; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#111614; --fg:#e7ece9; --muted:#9aa8a2; --line:#2a3330; --card:#182019; --live:#5fd19b; --draft:#e2b04a; } }
-  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; }
-  main { max-width:960px; margin:0 auto; padding:24px 16px 48px; }
-  h1 { font-size:24px; margin:0 0 4px; } h2 { font-size:19px; margin:28px 0 8px; }
-  .muted { color:var(--muted); }
-  .note { border:1px solid var(--line); background:var(--card); border-radius:10px; padding:12px 14px; margin:16px 0; }
-  .sys { border:1px solid var(--line); background:var(--card); border-radius:10px; padding:12px 14px; margin:10px 0; }
-  .sys b { font-size:17px; } .tag { font-size:13px; padding:1px 8px; border-radius:99px; border:1px solid currentColor; margin-left:6px; }
-  .live { color:var(--live); } .draft { color:var(--draft); }
+/* Waterworks Desk console. Palette and habits from Downlink Desk; system fonts so it works offline. */
+:root{
+  --bg:#e9edf1; --panel:#fbfcfd; --sunk:#f1f4f7; --ink:#15212c; --muted:#5b6b79; --line:#d2dae1;
+  --accent:#1f5fa8; --accent-ink:#fff; --accent-bg:#e1ebf7;
+  --ok:#1d7f53; --warn:#a86c10; --crit:#bf3227; --adv:#4a5fb0; --stale:#7f8c99;
+  --ok-bg:#e1f2e9; --warn-bg:#fbefd9; --crit-bg:#fbe3e0; --adv-bg:#e6e9f8; --stale-bg:#e7ebef;
+  --water:#3b82c4; --water-bg:#cfe2f5; --earth:#b9a58a;
+  --f-body:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+  --f-mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c131a; --panel:#121c26; --sunk:#0f1820; --ink:#d9e3eb; --muted:#8fa0b0; --line:#243342;
+  --accent:#7aa8ff; --accent-ink:#0c131a; --accent-bg:#17284a;
+  --ok:#43c088; --warn:#e3a840; --crit:#f2675c; --adv:#9aa8ff; --stale:#6c7b8a;
+  --ok-bg:#12301f; --warn-bg:#33270f; --crit-bg:#3a1714; --adv-bg:#1d2246; --stale-bg:#1a2531;
+  --water:#5ea3e6; --water-bg:#163049; --earth:#6b5d4b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c131a; --panel:#121c26; --sunk:#0f1820; --ink:#d9e3eb; --muted:#8fa0b0; --line:#243342;
+  --accent:#7aa8ff; --accent-ink:#0c131a; --accent-bg:#17284a;
+  --ok:#43c088; --warn:#e3a840; --crit:#f2675c; --adv:#9aa8ff; --stale:#6c7b8a;
+  --ok-bg:#12301f; --warn-bg:#33270f; --crit-bg:#3a1714; --adv-bg:#1d2246; --stale-bg:#1a2531;
+  --water:#5ea3e6; --water-bg:#163049; --earth:#6b5d4b; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body)}
+button,select,input,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+h1{font-size:19px;margin:0;font-weight:650}
+h2{font-size:16px;margin:0 0 8px;font-weight:650}
+h3{font-size:14px;margin:14px 0 6px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+
+.banner{padding:8px 16px;font-size:14px;border-bottom:1px solid var(--line);background:var(--adv-bg)}
+.banner.safety{background:var(--sunk);color:var(--muted);font-size:13px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+header.top .brand{display:flex;align-items:center;gap:10px}
+header.top .brand svg{flex:none}
+nav.tabs{display:flex;gap:4px}
+nav.tabs button{border:0;background:none;padding:7px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
+nav.tabs button[aria-current="page"]{background:var(--accent-bg);color:var(--accent)}
+.grow{flex:1}
+.who{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.who input{width:150px}
+input,select,textarea{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:6px 9px;min-height:34px}
+textarea{width:100%;min-height:60px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:600;min-height:34px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.small{padding:3px 9px;min-height:28px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+main{max-width:1500px;margin:0 auto;padding:14px 16px 48px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.grid-ov{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr);gap:14px;align-items:start}
+@media (max-width:900px){.grid-ov{grid-template-columns:1fr}}
+#map{height:min(68vh,640px);border-radius:10px;border:1px solid var(--line);background:var(--sunk)}
+#map.blank{background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:40px 40px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.counts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:650;border:1px solid}
+.chip.critical{color:var(--crit);background:var(--crit-bg);border-color:var(--crit)}
+.chip.warning{color:var(--warn);background:var(--warn-bg);border-color:var(--warn)}
+.chip.advisory{color:var(--adv);background:var(--adv-bg);border-color:var(--adv)}
+.chip.ok,.chip.live{color:var(--ok);background:var(--ok-bg);border-color:var(--ok)}
+.chip.draft,.chip.retired{color:var(--stale);background:var(--stale-bg);border-color:var(--stale)}
+.alert{border:1px solid var(--line);border-left:5px solid var(--stale);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:var(--panel)}
+.alert.critical{border-left-color:var(--crit)} .alert.warning{border-left-color:var(--warn)} .alert.advisory{border-left-color:var(--adv)}
+.alert.ended{opacity:.7}
+.alert .head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.alert p{margin:4px 0 6px}
+.alert .acts{display:flex;gap:6px;flex-wrap:wrap}
+.leaflet-container{font:inherit}
+.site-icon{background:none;border:0}
+.leaflet-tooltip{font-size:13px}
+.site-head{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:12px}
+.grid-site{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:900px){.grid-site{grid-template-columns:1fr}}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:650}
+tr.pick{cursor:pointer} tr.pick:hover{background:var(--sunk)} tr.sel{background:var(--accent-bg)}
+.val{font-size:17px;font-weight:650}
+.chart svg{width:100%;height:auto;display:block}
+.ranges{display:flex;gap:4px;flex-wrap:wrap}
+.ranges button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tree ul{list-style:none;padding-left:18px;margin:4px 0}
+.tree>ul{padding-left:0}
+.tree li{margin:4px 0}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+dialog{border:1px solid var(--line);border-radius:14px;padding:0;background:var(--panel);color:var(--ink);width:min(760px,96vw);max-height:92vh}
+dialog::backdrop{background:rgba(10,18,26,.5)}
+dialog form{padding:16px 18px}
+dialog .dlg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 14px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:13px;font-weight:600}
+.field .hint{font-size:12px;color:var(--muted)}
+.field.wide{grid-column:1/-1}
+.height{display:flex;gap:6px}.height input{width:110px}
+.problems{border:1px solid var(--crit);background:var(--crit-bg);border-radius:8px;padding:8px 12px;margin:10px 0}
+.problems.warn{border-color:var(--warn);background:var(--warn-bg)}
+.problems ul{margin:4px 0;padding-left:18px}
+#pickmap{height:220px;border-radius:8px;border:1px solid var(--line)}
+.sketch svg{width:100%;max-width:300px;height:auto}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;max-width:90vw;z-index:2000;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.empty{padding:20px;text-align:center;color:var(--muted)}
+.foot{margin-top:18px;font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
+<div id="demo" class="banner" hidden></div>
+<div class="banner safety" data-t="safety"></div>
+<header class="top">
+  <div class="brand">
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 3c4 5.5 7.5 9.4 7.5 13.3A7.5 7.5 0 0 1 6.5 16.3C6.5 12.4 10 8.5 14 3z" fill="var(--water)"/><path d="M10 17.5a4 4 0 0 0 4 4" stroke="var(--panel)" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+    <h1 id="title">Waterworks Desk</h1>
+  </div>
+  <nav class="tabs" aria-label="Views">
+    <button data-view="overview" data-t="nav.overview"></button>
+    <button data-view="setup" data-t="nav.setup"></button>
+    <button data-view="log" data-t="nav.log"></button>
+  </nav>
+  <label class="row small"><span data-t="sys.pick"></span> <select id="sysPick" aria-label="System"></select></label>
+  <span class="grow"></span>
+  <span id="clock" class="small muted"></span>
+  <div class="who">
+    <input id="you" autocomplete="name" aria-label="Your name">
+    <input id="pass" type="password" autocomplete="current-password" aria-label="Passcode" hidden>
+    <select id="lang" aria-label="Language"><option value="en">English</option><option value="vi">Tiếng Việt</option></select>
+  </div>
+</header>
+
 <main>
-  <h1>Waterworks Desk</h1>
-  <div class="muted" id="ver"></div>
-  <div class="note">This is the M0 foundation: data storage, setup and the API. The map, setup screens and alerts arrive in M1.
-    The console only reads data; it never sends commands to a pump, valve, gate or PLC. It advises; SCADA alarms, interlocks and operators stay in charge.</div>
-  <div id="tree"><p class="muted">Loading…</p></div>
+  <section id="v-overview" hidden>
+    <div class="grid-ov">
+      <div class="panel">
+        <div id="map" role="application" aria-label="Map of sites"></div>
+        <div class="legend" id="legend"></div>
+        <div class="small muted" id="rain24"></div>
+      </div>
+      <div>
+        <div class="panel">
+          <div class="row"><h2 data-t="ov.alerts"></h2><span class="grow"></span>
+            <label class="small row"><input type="checkbox" id="showShelved"> <span data-t="ov.show_shelved"></span></label></div>
+          <div class="counts" id="counts"></div>
+          <div id="alerts"></div>
+          <h3 data-t="ov.recent"></h3>
+          <div id="recent"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-site" hidden></section>
+  <section id="v-setup" hidden></section>
+  <section id="v-log" hidden></section>
+  <div class="foot" id="foot"></div>
 </main>
+
+<dialog id="dlg"><form method="dialog" id="dlgForm"></form></dialog>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
 <script>
-const NT = {drinking_water:"Drinking water", sanitary_sewer:"Sanitary sewer", storm_drain:"Storm drain", combined_sewer:"Combined sewer"};
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-fetch("/api/health").then(r => r.json()).then(h => { document.getElementById("ver").textContent = "Version " + h.version; }).catch(() => {});
-fetch("/api/tree").then(r => r.json()).then(t => {
-  const el = document.getElementById("tree");
-  if (!t.regions.length) { el.innerHTML = '<p>Nothing is set up yet. Import a setup file with <code>python -m waterworks_desk.ingest --setup FILE --actor "Your name"</code>.</p>'; return; }
-  el.innerHTML = t.regions.map(r => `<h2>${esc(r.name)}</h2><div class="muted">${esc(r.timezone)}${r.datum ? " · heights above " + esc(r.datum) : ""}${r.note ? " · " + esc(r.note) : ""}</div>` +
-    r.systems.map(s => `<div class="sys"><b>${esc(s.name)}</b><span class="tag ${s.status}">${s.status === "live" ? "Live" : "Draft"}</span>
-      <div class="muted">${NT[s.network_type] || esc(s.network_type)} · ${s.sites} site${s.sites === 1 ? "" : "s"} (${s.sites_live} live) · ${s.sensors} sensor${s.sensors === 1 ? "" : "s"}</div></div>`).join("")).join("");
-}).catch(() => { document.getElementById("tree").innerHTML = "<p>Couldn't load the network. Is the server running?</p>"; });
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const ST=window.WWD_STATIC||null;
+const prefs=lsGet("wwd.prefs",{});
+let LANG=prefs.lang||null, I18N={}, I18N_EN={}, CONF=null, TREE=null, SYS=prefs.sys||"", VIEW="overview", SITE=null;
+let MAPDATA=null, ALERTS=[], RECENT=[], map=null, markers=null, CHART={sensor:null,range:"7d"}, SITEDATA=null;
+
+/* ---------- words ---------- */
+function t(k,p){let s=I18N[k]??I18N_EN[k]??k;if(p)s=s.replace(/\{(\w+)\}/g,(m,n)=>p[n]!=null?p[n]:m);return s}
+function applyWords(){$$("[data-t]").forEach(el=>el.textContent=t(el.dataset.t));$("#you").placeholder=t("you.name");$("#pass").placeholder=t("you.passcode");document.documentElement.lang=LANG}
+async function loadLang(l){
+  const get=async x=>{const r=await fetch((ST?ST.base.replace(/api\/$/,""):"")+"i18n/"+x+".json",{cache:"no-cache"});return r.json()};
+  if(!Object.keys(I18N_EN).length)I18N_EN=await get("en");
+  I18N=l==="en"?I18N_EN:await get(l);LANG=l;
+}
+
+/* ---------- server ---------- */
+function staticFile(path){
+  const [base,qs]=path.split("?"),q=new URLSearchParams(qs||""),n=base.replace(/^\/api\//,"");
+  if(n==="alerts")return "alerts";
+  if(n.startsWith("sensors/")){const key=n.split("/")[1],from=+q.get("from"),to=+q.get("to"),span=to-from;
+    return {sensor:key,file:span<=8*86400?"raw":span<=95*86400?"3600":"86400",from,to}}
+  if(n==="setup/item")return null;
+  return n;
+}
+async function staticApi(path,opts){
+  if(opts&&opts.method==="POST"){const e=new Error(t("m.readonly"));e.status=403;throw e}
+  const f=staticFile(path);if(!f){const e=new Error(t("m.readonly"));e.status=404;throw e}
+  if(typeof f==="object"){
+    const r=await fetch(ST.base+"sensors/"+encodeURIComponent(f.sensor)+"/"+f.file+".json",{cache:"no-cache"});
+    if(!r.ok)return {t:[],v:[],res:f.file};
+    const j=await r.json(),keep=j.t.map((x,i)=>x>=f.from&&x<=f.to?i:-1).filter(i=>i>=0);
+    const out={...j,from:f.from,to:f.to};for(const k of ["t","v","lo","hi","n","q"])if(j[k])out[k]=keep.map(i=>j[k][i]);return out;
+  }
+  const r=await fetch(ST.base+f+".json",{cache:"no-cache"});
+  if(!r.ok){const e=new Error("Not in this snapshot");e.status=404;throw e}
+  return r.json();
+}
+async function api(path,opts){
+  if(ST)return staticApi(path,opts);
+  const o=Object.assign({headers:{}},opts||{});
+  if(o.body&&typeof o.body!=="string"){o.body=JSON.stringify(o.body);o.headers["Content-Type"]="application/json"}
+  const pass=$("#pass").value;if(pass)o.headers["X-Passcode"]=pass;
+  const r=await fetch(path,o);const j=await r.json().catch(()=>({}));
+  if(!r.ok){const e=new Error(j.error||("HTTP "+r.status));e.status=r.status;e.body=j;throw e}
+  return j;
+}
+function actor(){const d=$("#dlg_you");if(d&&d.value.trim()){$("#you").value=d.value.trim();savePrefs()}const n=$("#you").value.trim();
+  if(!n){toast(t("m.need_name"));(d&&$("#dlg").open?d:$("#you")).focus();throw new Error("name")}return n}
+const nameField=()=>$("#you").value.trim()||ST?"":`<div class="field wide"><label for="dlg_you">${esc(t("you.name"))}</label><input id="dlg_you" autocomplete="name"><div class="hint">${esc(t("m.need_name"))}</div></div>`;
+async function post(path,body){return api(path,{method:"POST",body:{...body,actor:actor()}})}
+let toastT;function toast(m){const el=$("#toast");el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,5000)}
+
+/* ---------- time and numbers ---------- */
+function tzOf(){if(!TREE)return "UTC";for(const r of TREE.regions)for(const s of r.systems)if(!SYS||s.key===SYS)return r.timezone||"UTC";return (TREE.regions[0]||{}).timezone||"UTC"}
+function fmtT(ms,withDate){const d=new Date(ms),tz=tzOf(),now=CONF?CONF.clock_ms:Date.now();
+  const same=new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit"});
+  const showDate=withDate||same.format(d)!==same.format(new Date(now));
+  return new Intl.DateTimeFormat(LANG==="vi"?"vi-VN":"en-GB",{timeZone:tz,hour:"2-digit",minute:"2-digit",...(showDate?{day:"numeric",month:"short",...(Math.abs(now-ms)>300*86400e3?{year:"numeric"}:{})}:{})}).format(d)}
+function fmtD(ms,monthOnly){return new Intl.DateTimeFormat(LANG==="vi"?"vi-VN":"en-GB",{timeZone:tzOf(),...(monthOnly?{month:"short",year:"2-digit"}:{day:"numeric",month:"short"})}).format(new Date(ms))}
+function dur(s){s=Math.max(0,Math.round(s));const m=Math.round(s/60);if(m<60)return t("m.min",{n:m});const h=Math.floor(m/60);if(h<48)return t("m.h",{h,m:m%60});return t("m.d",{d:Math.floor(h/24),h:h%24})}
+function show(x,v){if(v==null||!isFinite(v))return "—";const d=x.display||{factor:1,offset:0,unit:x.unit};const y=(v-d.offset)/d.factor;const a=Math.abs(y);
+  return (a>=1000?y.toFixed(0):a>=10?y.toFixed(1):y.toFixed(2))+" "+d.unit}
+const disp=(x,v)=>v==null?null:(v-(x.display||{offset:0}).offset)/((x.display||{factor:1}).factor);
+
+/* ---------- alerts text ---------- */
+function alertText(a){if(!a.t||!a.p)return a.message;const p={...a.p};
+  if(p.since!=null)p.since=fmtT(p.since*1000);if(p.level)p.level=t("lvl."+p.level);if(p.wk){p.why=t("why."+p.wk);p.check=t("check."+p.wk)}
+  if(p.every_s)p.every=dur(p.every_s);return t("tpl."+a.t,p)}
+const SEV_ICON={critical:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1l6.5 12h-13z" fill="currentColor"/></svg>',
+  warning:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1l6 6-6 6-6-6z" fill="currentColor"/></svg>',
+  advisory:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" rx="2" fill="currentColor"/></svg>',
+  ok:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="currentColor"/></svg>',
+  draft:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2"/></svg>'};
+const sevChip=s=>`<span class="chip ${s}">${SEV_ICON[s]||""}${esc(t("sev."+s))}</span>`;
+function alertCard(a,{site=true}={}){
+  const now=CONF.clock_ms,ended=a.end_ms!=null;
+  let meta=ended?t("al.cleared",{time:fmtT(a.end_ms)}):t("al.for",{dur:dur((now-a.start_ms)/1000)});
+  let extra="";if(a.ack_by)extra+=`<div class="small muted">✓ ${esc(t("al.acked",{who:a.ack_by}))}</div>`;
+  if(a.shelved_until_ms&&a.shelved_until_ms>Date.now())extra+=`<div class="small muted">${esc(t("al.shelved",{who:a.shelved_by,time:fmtT(a.shelved_until_ms,true),reason:a.shelve_reason}))}</div>`;
+  if(a.adjusted)extra+=`<div class="small muted">${esc(t(a.adjusted.startsWith("raised")?"al.adj.raised":"al.adj.lowered"))}</div>`;
+  if(a.returns)extra+=`<div class="small muted">↻ ${esc(t("al.returns",{n:a.returns,time:a.last_clear_ms?fmtT(a.last_clear_ms):"…"}))}</div>`;
+  const acts=ended||ST?"":`<div class="acts">${a.ack_by?"":`<button class="btn small" data-ack="${a.id}">${esc(t("al.ack"))}</button>`}
+    ${a.shelved_until_ms&&a.shelved_until_ms>Date.now()?`<button class="btn small" data-unshelve="${a.id}">${esc(t("al.unshelve"))}</button>`:`<button class="btn small" data-shelve="${a.id}">${esc(t("al.shelve"))}</button>`}
+    ${site&&a.site?`<button class="btn small" data-site="${esc(a.site)}">${esc(t("al.open_site"))}</button>`:""}</div>`;
+  const open=site&&a.site&&(ended||ST)?`<div class="acts"><button class="btn small" data-site="${esc(a.site)}">${esc(t("al.open_site"))}</button></div>`:"";
+  return `<div class="alert ${a.severity}${ended?" ended":""}"><div class="head">${sevChip(a.severity)}<span class="small muted">${esc(meta)}</span></div>
+    <p>${esc(alertText(a))}</p>${extra}${acts}${open}</div>`;
+}
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("button");if(!b)return;
+  try{
+    if(b.dataset.site){openSite(b.dataset.site);return}
+    if(b.dataset.ack){const note=prompt(t("al.note"))??null;if(note===null)return;await post("/api/alerts/ack",{id:+b.dataset.ack,note});await refreshAlerts();if(VIEW==="site")openSite(SITE,true)}
+    if(b.dataset.shelve){const h=prompt(t("al.hours"),"4");if(h==null)return;const reason=prompt(t("al.reason"));if(reason==null)return;
+      await post("/api/alerts/shelve",{id:+b.dataset.shelve,hours:+h,reason});await refreshAlerts()}
+    if(b.dataset.unshelve){await post("/api/alerts/unshelve",{id:+b.dataset.unshelve});await refreshAlerts()}
+  }catch(err){if(err.message!=="name")toast(t("m.error",{e:err.message}))}
+});
+
+/* ---------- map ---------- */
+function markerSVG(sev,draft){const c=draft?"var(--stale)":{critical:"var(--crit)",warning:"var(--warn)",advisory:"var(--adv)"}[sev]||"var(--ok)";
+  const shape=draft?`<circle cx="12" cy="12" r="7" fill="var(--panel)" stroke="${c}" stroke-width="3"/>`:
+    sev==="critical"?`<path d="M12 2l10 18H2z" fill="${c}" stroke="var(--panel)" stroke-width="2"/><path d="M12 8v6m0 2.5v.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>`:
+    sev==="warning"?`<path d="M12 2l9 10-9 10-9-10z" fill="${c}" stroke="var(--panel)" stroke-width="2"/>`:
+    sev==="advisory"?`<rect x="4" y="4" width="16" height="16" rx="3" fill="${c}" stroke="var(--panel)" stroke-width="2"/>`:
+    `<circle cx="12" cy="12" r="7.5" fill="${c}" stroke="var(--panel)" stroke-width="2"/>`;
+  return `<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">${shape}</svg>`}
+function drawLegend(){$("#legend").innerHTML=`<strong>${esc(t("ov.legend"))}:</strong>`+["critical","warning","advisory","ok"].map(s=>`<span>${markerSVG(s==="ok"?null:s)}${esc(t("lg."+s))}</span>`).join("")+`<span>${markerSVG(null,true)}${esc(t("lg.draft"))}</span>`}
+function ensureMap(){
+  if(map)return;
+  map=L.map("map",{zoomControl:true,attributionControl:true});
+  if(CONF.map.tile_url){L.tileLayer(CONF.map.tile_url,{maxZoom:CONF.map.max_zoom||19,attribution:CONF.map.attribution||""}).addTo(map)}
+  else{$("#map").classList.add("blank");map._wwdNote=esc(t("map.no_tiles"));map.attributionControl.addAttribution(map._wwdNote)}
+  L.control.scale({imperial:false}).addTo(map);
+  markers=L.layerGroup().addTo(map);
+}
+function drawMap(){
+  ensureMap();markers.clearLayers();const pts=[];
+  for(const s of MAPDATA.sites){
+    const draft=s.status!=="live";const icon=L.divIcon({className:"site-icon",html:markerSVG(s.worst,draft),iconSize:[24,24],iconAnchor:[12,12]});
+    const m=L.marker([s.lat,s.lon],{icon,title:s.name,keyboard:true,riseOnHover:true,zIndexOffset:{critical:900,warning:600,advisory:300}[s.worst]||0});
+    const reading=s.readings.find(r=>r.value!=null);
+    m.bindTooltip(`<strong>${esc(s.name)}</strong><br>${esc(t("st."+s.site_type))} · ${esc(draft?t("status.draft"):t(s.worst?"sev."+s.worst:"sev.ok"))}${reading?`<br>${esc(reading.name)}: ${esc(show(reading,reading.value))}`:""}`);
+    m.on("click",()=>openSite(s.key));markers.addLayer(m);pts.push([s.lat,s.lon]);
+  }
+  if(pts.length){const b=L.latLngBounds(pts);map.fitBounds(b.pad(0.08),{maxZoom:16})}
+  else if(TREE.regions[0]&&TREE.regions[0].lat!=null)map.setView([TREE.regions[0].lat,TREE.regions[0].lon],12);
+  else map.setView([20,0],2);
+  setTimeout(()=>map.invalidateSize(),50);
+}
+async function drawRain(){
+  const g=MAPDATA.sites.find(s=>s.rain_sensor);if(!g){$("#rain24").textContent="";return}
+  const to=Math.floor(CONF.clock_ms/1000);
+  try{const r=await api(`/api/sensors/${encodeURIComponent(g.rain_sensor)}/readings?from=${to-86400}&to=${to}`);
+    let sum=0;if(r.res==="raw")sum=r.v.reduce((a,b)=>a+b,0);else sum=r.v.reduce((a,b,i)=>a+b*(r.n?r.n[i]:1),0);
+    $("#rain24").textContent=t("ov.rain24",{v:sum.toFixed(1),gauge:g.name})}catch(e){}
+}
+
+/* ---------- overview ---------- */
+async function refreshAlerts(){
+  const sys=SYS?"system="+encodeURIComponent(SYS)+"&":"";
+  const all=await api(`/api/alerts?${sys}ended_hours=24${$("#showShelved").checked?"&shelved=1":""}`);
+  let list=all;if(ST){list=all.filter(a=>!SYS||a.system===SYS||!a.system)}
+  ALERTS=list.filter(a=>a.end_ms==null&&($("#showShelved").checked||!(a.shelved_until_ms>Date.now())));
+  RECENT=list.filter(a=>a.end_ms!=null&&a.end_ms>CONF.clock_ms-86400e3);
+  const n=s=>ALERTS.filter(a=>a.severity===s).length;
+  $("#counts").innerHTML=["critical","warning","advisory"].map(s=>`<span class="chip ${s}">${SEV_ICON[s]}${n(s)} ${esc(t("sev."+s))}</span>`).join("");
+  $("#alerts").innerHTML=ALERTS.length?ALERTS.map(a=>alertCard(a)).join(""):`<div class="empty">${SEV_ICON.ok} ${esc(t("ov.none"))}</div>`;
+  $("#recent").innerHTML=RECENT.length?RECENT.slice(0,20).map(a=>alertCard(a)).join(""):`<div class="small muted">${esc(t("setup.none"))}</div>`;
+}
+async function showOverview(){
+  MAPDATA=await api("/api/map"+(SYS&&!ST?"?system="+encodeURIComponent(SYS):""));
+  if(ST&&SYS)MAPDATA={sites:MAPDATA.sites.filter(s=>s.system===SYS)};
+  drawLegend();drawMap();await refreshAlerts();drawRain();
+  if(!MAPDATA.sites.length)$("#alerts").innerHTML=`<div class="empty">${esc(t("ov.no_sites"))}</div>`;
+}
+
+/* ---------- site ---------- */
+function schematic(s){
+  const lvl=s.sensors.find(x=>x.quantity==="level"&&x.mount_level_m!=null&&x.latest);
+  const hasLevels=s.floor_level_m!=null&&s.overflow_level_m!=null;
+  const pumps=s.components.filter(c=>/pump/.test(c.type));
+  if(!hasLevels&&!pumps.length)return "";
+  const W=300,H=260,top=30,bot=230;let g="";
+  if(hasLevels){
+    const fl=s.floor_level_m,ov=s.overflow_level_m,gr=s.ground_level_m??ov,hi=Math.max(gr,ov)+(ov-fl)*.12,lo=fl-(ov-fl)*.05;
+    const Y=v=>top+(hi-v)/(hi-lo)*(bot-top),x0=70,x1=200;
+    const sameGF=s.ground_level_m!=null&&Math.abs(Y(gr)-Y(fl))<14;
+    if(s.ground_level_m!=null)g+=`<rect x="0" y="${Y(gr)}" width="${W}" height="${bot-Y(gr)+20}" fill="var(--earth)" fill-opacity=".25"/><line x1="0" x2="${W}" y1="${Y(gr)}" y2="${Y(gr)}" stroke="var(--earth)" stroke-width="2"/>${sameGF?"":`<text x="${x1+14}" y="${Y(gr)-5}" font-size="11" fill="var(--muted)">${esc(t("site.ground"))} ${gr.toFixed(2)}</text>`}`;
+    g+=`<rect x="${x0}" y="${Y(Math.max(gr,ov))}" width="${x1-x0}" height="${Y(fl)-Y(Math.max(gr,ov))}" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>`;
+    if(lvl){const w=lvl.mount_level_m+lvl.latest.value,wc=Math.min(Math.max(w,fl),hi);const pct=Math.round((w-fl)/(ov-fl)*100);
+      g+=`<rect x="${x0+1}" y="${Y(wc)}" width="${x1-x0-2}" height="${Y(fl)-Y(wc)}" fill="var(--water-bg)"/><line x1="${x0+1}" x2="${x1-1}" y1="${Y(wc)}" y2="${Y(wc)}" stroke="var(--water)" stroke-width="2.5"/>
+      <text x="${(x0+x1)/2}" y="${Math.min(Y(wc)+18,Y(fl)-6)}" text-anchor="middle" font-size="13" font-weight="650" fill="var(--water)">${esc(t("site.full",{pct}))}</text>`}
+    g+=`<line x1="${x0-12}" x2="${x1+12}" y1="${Y(ov)}" y2="${Y(ov)}" stroke="var(--crit)" stroke-dasharray="5 3" stroke-width="1.5"/><text x="${x1+14}" y="${Y(ov)+4}" font-size="11" fill="var(--crit)">${esc(t("site.overflow"))} ${ov.toFixed(2)}</text>`;
+    g+=`<text x="${x1+14}" y="${Y(fl)+(sameGF?16:4)}" font-size="11" fill="var(--muted)">${esc(t("site.floor"))} ${fl.toFixed(2)}</text>`;
+  }
+  pumps.slice(0,4).forEach((p,i)=>{const flow=s.sensors.find(x=>x.component===p.key&&(x.quantity==="flow"||x.quantity==="state"||x.quantity==="current")&&x.latest);
+    const run=flow?flow.latest.value>0.01:null,cx=22,cy=60+i*46,col=run==null?"var(--stale)":run?"var(--ok)":"var(--muted)";
+    g+=`<g><circle cx="${cx}" cy="${cy}" r="15" fill="var(--panel)" stroke="${col}" stroke-width="2.5"/><path d="M${cx-6} ${cy-7}l13 7-13 7z" fill="${col}"/>
+      <text x="${cx}" y="${cy+28}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${esc(p.name)}${run==null?"":" · "+esc(t(run?"site.running":"site.stopped"))}</text></g>`});
+  return `<div class="panel"><h3 style="margin-top:0">${esc(t("site.levels"))}</h3><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t("setup.sketch"))}" style="width:100%;height:auto">${g}</svg></div>`;
+}
+function limitText(x){const L=x.limits;const lo=L.alarm_lo??L.warn_lo,hi=L.alarm_hi??L.warn_hi;if(lo==null&&hi==null)return t("site.no_limits");
+  const v=x.latest?x.latest.value:null,out=v!=null&&((L.alarm_lo!=null&&v<L.alarm_lo)||(L.warn_lo!=null&&v<L.warn_lo)||(L.alarm_hi!=null&&v>L.alarm_hi)||(L.warn_hi!=null&&v>L.warn_hi));
+  const rng=`${L.warn_lo!=null?show(x,L.warn_lo):"…"} – ${L.warn_hi!=null?show(x,L.warn_hi):"…"}`;
+  return `${esc(t(out?"site.outside":"site.inside"))} <span class="muted">(${esc(rng)})</span>`}
+async function openSite(key,keepChart){
+  SITE=key;setView("site");const el=$("#v-site");if(!keepChart)CHART.sensor=null;
+  if(location.hash!=="#site="+encodeURIComponent(key))history.replaceState(null,"","#site="+encodeURIComponent(key));
+  el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
+  let s;try{s=await api("/api/sites/"+encodeURIComponent(key))}catch(e){el.innerHTML=`<div class="empty">${esc(t("m.error",{e:e.message}))}</div>`;return}
+  SITEDATA=s;const worst=s.alerts.filter(a=>a.end_ms==null).map(a=>a.severity).sort((a,b)=>({critical:0,warning:1,advisory:2}[a]-{critical:0,warning:1,advisory:2}[b]))[0];
+  const edit=ST?"":`<button class="btn" id="editSite">${esc(t("site.edit"))}</button><button class="btn" id="addComp">${esc(t("site.add_component"))}</button><button class="btn" id="addSens">${esc(t("site.add_sensor"))}</button><button class="btn" id="manual">${esc(t("site.manual"))}</button>`;
+  el.innerHTML=`<div class="site-head"><button class="btn" id="back">← ${esc(t("site.back"))}</button>
+     <div><h1>${esc(s.name)}</h1><div class="small muted">${esc(t("st."+s.site_type))} · ${esc(s.system_name)} (${esc(t("nt."+s.network_type))}) · ${esc(t("site.criticality",{n:s.criticality}))} · <span class="mono">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}</span></div></div>
+     ${s.status!=="live"?`<span class="chip draft">${esc(t("status.draft"))}</span>`:sevChip(worst||"ok")}<span class="grow"></span>${edit}</div>
+   ${s.status!=="live"?`<div class="problems warn">${esc(t("site.draft_note"))}${ST?"":` <button class="btn small" id="liveSite">${esc(t("site.put_live"))}</button>`}</div>`:""}
+   ${s.pending.some(p=>p.kind==="site"&&p.key===s.key)?`<div class="problems warn">${esc(t("site.pending"))}</div>`:""}
+   <div class="grid-site"><div>${schematic(s)}
+     <div class="panel" style="margin-top:14px"><h3 style="margin-top:0">${esc(t("site.equipment"))}</h3>${s.components.length?`<table>${s.components.map(c=>`<tr><td>${esc(c.name)}<div class="small muted">${esc(t("ct."+c.type))}${c.install_date?" · "+esc(c.install_date):""}</div></td><td>${c.status!=="live"?`<span class="chip draft">${esc(t("status.draft"))}</span>`:""}${ST?"":`<button class="btn small" data-edit="component:${esc(c.key)}">${esc(t("setup.edit"))}</button>`}</td></tr>`).join("")}</table>`:`<div class="small muted">${esc(t("setup.none"))}</div>`}</div>
+     <div class="panel" style="margin-top:14px"><h3 style="margin-top:0">${esc(t("site.alerts"))}</h3>${s.alerts.length?s.alerts.map(a=>alertCard(a,{site:false})).join(""):`<div class="small muted">${esc(t("site.no_alerts"))}</div>`}</div>
+   </div><div>
+     <div class="panel"><h3 style="margin-top:0">${esc(t("site.sensors"))}</h3><table><thead><tr><th>${esc(t("f.name"))}</th><th>${esc(t("f.value"))}</th><th>${esc(t("site.limits"))}</th></tr></thead><tbody>
+     ${s.sensors.map(x=>`<tr class="pick${CHART.sensor===x.key?" sel":""}" data-sensor="${esc(x.key)}" tabindex="0"><td>${esc(x.name)}<div class="small muted">${esc(t("q."+x.quantity))}${x.status!=="live"?" · "+esc(t("status.draft")):""}</div></td>
+        <td><span class="val mono">${x.latest?esc(show(x,x.latest.value)):"—"}</span><div class="small muted">${x.latest?esc(t("site.reading_at",{time:fmtT(x.latest.ts*1000)})):esc(t("site.no_reading"))}${x.latest&&x.latest.level_above_datum_m!=null&&s.datum?"<br>"+esc(t("site.above_datum",{v:x.latest.level_above_datum_m.toFixed(2)+" m",datum:s.datum})):""}</div></td>
+        <td class="small">${limitText(x)}${ST?"":`<div><button class="btn small" data-edit="sensor:${esc(x.key)}">${esc(t("setup.edit"))}</button></div>`}</td></tr>`).join("")}</tbody></table></div>
+     <div class="panel chart" style="margin-top:14px" id="chartBox"><div class="small muted">${esc(t("site.chart_hint"))}</div></div>
+   </div></div>`;
+  $("#back").onclick=()=>{setView("overview");showOverview()};
+  $$("#v-site tr.pick").forEach(r=>{const go=()=>{CHART.sensor=r.dataset.sensor;$$("#v-site tr.pick").forEach(x=>x.classList.toggle("sel",x===r));drawChart()};r.onclick=go;r.onkeydown=e=>{if(e.key==="Enter")go()}});
+  if(!ST){$("#editSite").onclick=()=>editForm("site",s.key);$("#addComp").onclick=()=>newForm("component",{site:s.key});$("#addSens").onclick=()=>newForm("sensor",{site:s.key});
+    $("#manual").onclick=()=>manualForm(s);const lv=$("#liveSite");if(lv)lv.onclick=()=>goLive("site",s.key)}
+  if(!CHART.sensor&&s.sensors.length)CHART.sensor=(s.sensors.find(x=>x.latest)||s.sensors[0]).key;
+  if(CHART.sensor){const r=$(`#v-site tr[data-sensor="${CSS.escape(CHART.sensor)}"]`);if(r)r.classList.add("sel");drawChart()}
+}
+const RANGES={"24h":86400,"7d":7*86400,"30d":30*86400,"1y":365*86400,"all":20*365*86400};
+async function drawChart(){
+  const box=$("#chartBox"),x=SITEDATA.sensors.find(s=>s.key===CHART.sensor);if(!x)return;
+  const to=Math.floor(CONF.clock_ms/1000),from=to-RANGES[CHART.range];
+  box.innerHTML=`<div class="row"><h2 style="margin:0">${esc(x.name)}</h2><span class="grow"></span><div class="ranges">${Object.keys(RANGES).map(k=>`<button class="btn small" aria-pressed="${k===CHART.range}" data-range="${k}">${esc(t("ch."+k))}</button>`).join("")}</div></div><div id="chartSvg" class="empty">${esc(t("m.loading"))}</div>`;
+  $$("#chartBox [data-range]").forEach(b=>b.onclick=()=>{CHART.range=b.dataset.range;drawChart()});
+  let r;try{r=await api(`/api/sensors/${encodeURIComponent(x.key)}/readings?from=${from}&to=${to}`)}catch(e){$("#chartSvg").textContent=t("m.error",{e:e.message});return}
+  let rain=null;const g=MAPDATA&&MAPDATA.sites.filter(s=>s.rain_sensor).sort((a,b)=>Math.hypot(a.lat-SITEDATA.lat,a.lon-SITEDATA.lon)-Math.hypot(b.lat-SITEDATA.lat,b.lon-SITEDATA.lon))[0];
+  if(g&&g.rain_sensor!==x.key){try{rain=await api(`/api/sensors/${encodeURIComponent(g.rain_sensor)}/readings?from=${from}&to=${to}&res=${r.res==="raw"?3600:r.res}`)}catch(e){}}
+  $("#chartSvg").outerHTML=`<div id="chartSvg">${chartSVG(x,r,rain,from,to)}</div>`;
+}
+function chartSVG(x,r,rain,from,to){
+  if(!r.t.length)return `<div class="empty">${esc(t("ch.nodata"))}</div>`;
+  const D=v=>disp(x,v),vals=r.v.map(D),los=(r.lo||r.v).map(D),his=(r.hi||r.v).map(D);
+  const t0=r.res==="raw"?Math.max(from,r.t[0]-1):Math.max(from,r.t[0]),t1=Math.min(to,r.t[r.t.length-1]+(r.res==="raw"?1:+r.res));
+  let lo=Math.min(...los),hi=Math.max(...his);const L=x.limits,lims=[["alarm_lo","crit"],["warn_lo","warn"],["warn_hi","warn"],["alarm_hi","crit"]].filter(([k])=>L[k]!=null).map(([k,c])=>[D(L[k]),c,k]);
+  lims.forEach(([v])=>{const s=Math.max(hi-lo,1e-6);if(v>lo-s*.6&&v<hi+s*.6){lo=Math.min(lo,v);hi=Math.max(hi,v)}});
+  if(hi-lo<1e-9){lo-=1;hi+=1}const pd=(hi-lo)*.08;lo-=pd;hi+=pd;
+  const W=760,H=300,L0=58,R0=12,T0=12,rainH=rain&&rain.t.length?46:0,B0=28+rainH;
+  const X=tt=>L0+(tt-t0)/Math.max(1,t1-t0)*(W-L0-R0),Y=v=>T0+(hi-v)/(hi-lo)*(H-T0-B0);let g="";
+  for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,y=Y(v);g+=`<line x1="${L0}" x2="${W-R0}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)"/><text x="${L0-6}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" class="mono" fill="var(--muted)">${Math.abs(v)>=100?v.toFixed(0):v.toFixed(Math.abs(hi-lo)<2?2:1)}</text>`}
+  const span=t1-t0,step=span<=2*86400?(span<=86400?3*3600:6*3600):span<=10*86400?86400:span<=62*86400?7*86400:span<=400*86400?30.4*86400:182*86400;
+  for(let tt=Math.ceil(t0/step)*step;tt<=t1;tt+=step){const xx=X(tt);g+=`<line x1="${xx.toFixed(1)}" x2="${xx.toFixed(1)}" y1="${T0}" y2="${H-B0}" stroke="var(--line)" stroke-dasharray="2 3"/><text x="${xx.toFixed(1)}" y="${H-B0+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(step>=86400?fmtD(tt*1000,step>=28*86400):fmtT(tt*1000,span>86400))}</text>`}
+  const used=[];for(const [v,c,k] of lims.slice().sort((a,b)=>a[2].startsWith("alarm")?-1:1)){if(v<lo||v>hi)continue;const y=Y(v);g+=`<line x1="${L0}" x2="${W-R0}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--${c})" stroke-width="1.4" stroke-dasharray="6 4"/>`;
+    if(used.some(u=>Math.abs(u-y)<13))continue;used.push(y);g+=`<text x="${W-R0-4}" y="${(y-4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--${c})">${esc(t(k.startsWith("alarm")?"ch.alarm":"ch.warn"))}</text>`}
+  if(r.lo){let top="",bot="";r.t.forEach((tt,i)=>{const xx=X(tt+(+r.res)/2).toFixed(1);top+=`${xx},${Y(his[i]).toFixed(1)} `;bot=`${xx},${Y(los[i]).toFixed(1)} `+bot});g+=`<polygon points="${top}${bot}" fill="var(--accent)" fill-opacity=".14"><title>${esc(t("ch.range"))}</title></polygon>`}
+  const gap=r.res==="raw"?Math.max(3*(x.expected_interval_s||300),900):3*(+r.res);let run=[],prev=null;const flush=()=>{if(run.length>1)g+=`<polyline points="${run.join(" ")}" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linejoin="round"/>`;else if(run.length===1){const [a,b]=run[0].split(",");g+=`<circle cx="${a}" cy="${b}" r="2" fill="var(--accent)"/>`}run=[]};
+  r.t.forEach((tt,i)=>{const tc=r.res==="raw"?tt:tt+(+r.res)/2;if(prev!=null&&tc-prev>gap)flush();run.push(X(tc).toFixed(1)+","+Y(vals[i]).toFixed(1));prev=tc});flush();
+  if(rainH){const rv=rain.v.map((v,i)=>v*(rain.n&&rain.res!=="raw"?rain.n[i]:1)),rmax=Math.max(1,...rv),base=H-8,top=H-rainH+6,bw=Math.max(1.5,(W-L0-R0)/Math.max(1,(t1-t0)/(rain.res==="raw"?3600:+rain.res))-1);
+    g+=`<text x="${L0-6}" y="${top+8}" text-anchor="end" font-size="11" fill="var(--water)">${esc(t("ch.rain"))}</text><text x="${L0-6}" y="${base}" text-anchor="end" font-size="10" fill="var(--muted)">${rmax.toFixed(1)} mm</text>`;
+    rain.t.forEach((tt,i)=>{if(rv[i]<=0||tt<t0||tt>t1)return;const h=rv[i]/rmax*(base-top);g+=`<rect x="${X(tt).toFixed(1)}" y="${(base-h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="var(--water)" fill-opacity=".7"><title>${esc(fmtT(tt*1000,true))} · ${rv[i].toFixed(1)} mm</title></rect>`})}
+  const label=`${esc(x.display.unit)} · ${esc(t("ch.res."+(r.res==="raw"?"raw":r.res)))}`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(x.name)}">${g}</svg><div class="small muted">${label}</div>`;
+}
+
+/* ---------- forms ---------- */
+let FORM=null;
+const HREFS_FOR={ground_level_m:["above_datum"],floor_level_m:["above_datum","below_ground"],overflow_level_m:["above_datum","below_ground","above_floor"],mount_level_m:["above_datum","below_ground","above_ground","above_floor","below_overflow"]};
+function fieldsFor(kind,item){
+  const sysOpts=()=>TREE.regions.flatMap(r=>r.systems.map(s=>[s.key,s.name])),regOpts=()=>TREE.regions.map(r=>[r.key,r.name]);
+  const types=k=>CONF[k].map(v=>[v,t((k==="site_types"?"st.":"ct.")+v)]);
+  const crit=[["1",t("crit.1")],["2",t("crit.2")],["3",t("crit.3")]];
+  const F={
+    region:[["name","text"],["timezone","text"],["datum","text"],["language","select",[["en","English"],["vi","Tiếng Việt"]]],["lat","coord"],["lon","coord"],["radius_km","number"],["note","textarea"]],
+    system:[["name","text"],["region","select",regOpts()],["network_type","select",CONF.network_types.map(n=>[n,t("nt."+n)])],["departments","text"]],
+    zone:[["name","text"],["system","select",sysOpts()],["kind","text"]],
+    site:[["name","text"],["system","select",sysOpts()],["site_type","select",types("site_types")],["criticality","select",crit],["lat","coord"],["lon","coord"],["pick","map"],
+          ["ground_level_m","height"],["floor_level_m","height"],["overflow_level_m","height"],["area","number"],["sketch","sketch"],["note","textarea"]],
+    component:[["name","text"],["component_type","select",types("component_types")],["criticality","select",[["",t("crit.same")],...crit]],["serial","text"],["install_date","date"],["note","textarea"]],
+    sensor:[["name","text"],["quantity","select",Object.keys(CONF.quantities).map(q=>[q,t("q."+q)])],["component","select",[["",""],...((SITEDATA&&SITEDATA.key===item.site?SITEDATA.components:[]).map(c=>[c.key,c.name]))]],
+            ["source","select",CONF.sources.map(s=>[s,s])],["source_tag","text"],["source_unit","unit"],["display_unit","unit"],["mount_level_m","height"],
+            ["range_lo","number"],["range_hi","number"],["warn_lo","number"],["warn_hi","number"],["alarm_lo","number"],["alarm_hi","number"],["expected_interval_s","number"],["note","textarea"]],
+  };
+  return F[kind];
+}
+function fieldHTML(kind,[name,type,opts],item){
+  const v=item[name],id="f_"+name,lab=`<label for="${id}">${esc(t("f."+(name==="kind"?"site_type":name)))}</label>`;
+  if(type==="map")return `<div class="field wide"><div class="hint">${esc(t("setup.pick_map"))}</div><div id="pickmap"></div></div>`;
+  if(type==="sketch")return `<div class="field sketch"><label>${esc(t("setup.sketch"))}</label><div id="sketch"></div></div>`;
+  if(type==="textarea")return `<div class="field wide">${lab}<textarea id="${id}" name="${name}">${esc(v??"")}</textarea></div>`;
+  if(type==="select")return `<div class="field">${lab}<select id="${id}" name="${name}">${opts.map(([k,l])=>`<option value="${esc(k)}"${String(v??"")===String(k)?" selected":""}>${esc(l)}</option>`).join("")}</select></div>`;
+  if(type==="unit")return `<div class="field">${lab}<select id="${id}" name="${name}" data-unit></select></div>`;
+  if(type==="height"){const refs=HREFS_FOR[name],cur=v&&typeof v==="object"?v:{ref:"above_datum",value:v};
+    return `<div class="field" data-height="${name}">${lab}<div class="height"><input id="${id}" name="${name}" inputmode="decimal" value="${esc(cur.value??"")}" placeholder="${esc(t("f.metres"))}">
+      ${refs.length>1?`<select name="${name}__ref" aria-label="${esc(t("f."+name))}">${refs.map(r=>`<option value="${r}"${cur.ref===r?" selected":""}>${esc(t("href."+r))}</option>`).join("")}</select>`:`<input type="hidden" name="${name}__ref" value="above_datum"><span class="small muted" style="align-self:center">${esc(t("href.above_datum"))}</span>`}</div>
+      <div class="hint">${esc(t("f.blank_ok"))}</div></div>`}
+  const hint=name==="lat"||name==="lon"?`<div class="hint">${esc(t("f.coord_hint"))}</div>`:/^(warn|alarm|range)/.test(name)?`<div class="hint">${esc(t("f.limits_hint"))}</div>`:"";
+  return `<div class="field">${lab}<input id="${id}" name="${name}" type="${type==="date"?"date":"text"}" ${type==="number"||type==="coord"?'inputmode="decimal"':""} value="${esc(v??"")}">${hint}</div>`;
+}
+function openForm(kind,item,isNew){
+  FORM={kind,isNew,item};const d=$("#dlg"),f=$("#dlgForm");
+  const title=isNew?t("setup.add."+kind):t("setup.edit")+": "+(item.name||item.key);
+  f.innerHTML=`<div class="dlg-head"><h2 style="margin:0">${esc(title)}</h2><button class="btn small" value="cancel" formnovalidate>${esc(t("m.close"))}</button></div>
+    ${isNew?`<p class="small muted">${esc(t("setup.intro").split(". ")[1]||"")}.</p>`:""}
+    <div class="fields">${nameField()}<div class="field"><label for="f_key">${esc(t("f.key"))}</label><input id="f_key" name="key" value="${esc(item.key??"")}" ${isNew?"":"readonly"} required pattern="[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}"><div class="hint">${esc(t("f.key_hint"))}</div></div>
+    ${fieldsFor(kind,item).map(fl=>fieldHTML(kind,fl,item)).join("")}</div>
+    <div id="formProblems"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" value="cancel" formnovalidate>${esc(t("setup.cancel"))}</button><button class="btn primary" id="formSave" value="default">${esc(t("setup.save"))}</button></div>`;
+  if(kind==="sensor"){const q=f.querySelector("[name=quantity]");const fillUnits=()=>{const qq=CONF.quantities[q.value];f.querySelectorAll("[data-unit]").forEach(s=>{const cur=s.value||item[s.name]||"";s.innerHTML=`<option value="">${esc(qq.unit)}</option>`+qq.units.map(u=>`<option${u===String(cur).toLowerCase()?" selected":""}>${esc(u)}</option>`).join("")});
+      f.querySelector('[data-height="mount_level_m"]').hidden=!["level","pressure"].includes(q.value)};q.onchange=fillUnits;fillUnits();
+    if(item.source_unit)f.querySelector("[name=source_unit]").value=item.source_unit.toLowerCase();if(item.display_unit)f.querySelector("[name=display_unit]").value=item.display_unit.toLowerCase()}
+  if(kind==="site"){setTimeout(()=>pickMap(f),30);f.addEventListener("input",()=>sketch(f));sketch(f);
+    if(item.area_curve_json&&item.area_curve_json.length)f.querySelector("[name=area]").value=item.area_curve_json[0][1]}
+  $("#formSave").onclick=async e=>{e.preventDefault();await submitForm(f)};
+  d.showModal();
+}
+function pickMap(f){const el=$("#pickmap");if(!el)return;const lat=parseFloat(f.lat.value),lon=parseFloat(f.lon.value);
+  const reg=TREE.regions[0]||{};const c=isFinite(lat)&&isFinite(lon)?[lat,lon]:reg.lat!=null?[reg.lat,reg.lon]:[20,0];
+  const m=L.map(el).setView(c,isFinite(lat)?16:reg.lat!=null?12:2);if(CONF.map.tile_url)L.tileLayer(CONF.map.tile_url,{maxZoom:CONF.map.max_zoom||19,attribution:CONF.map.attribution}).addTo(m);else el.classList.add("blank");
+  let mk=isFinite(lat)?L.marker(c).addTo(m):null;
+  (MAPDATA?MAPDATA.sites:[]).forEach(s=>L.circleMarker([s.lat,s.lon],{radius:4,color:"#7f8c99",weight:1}).bindTooltip(s.name).addTo(m));
+  m.on("click",e=>{f.lat.value=e.latlng.lat.toFixed(6);f.lon.value=e.latlng.lng.toFixed(6);if(mk)mk.setLatLng(e.latlng);else mk=L.marker(e.latlng).addTo(m)})}
+function heightValue(f,name){const v=f[name]?f[name].value.trim():"";if(v==="")return null;const ref=f.querySelector(`[name="${name}__ref"]`).value;return ref==="above_datum"?+v.replace(",","."):{ref,value:+v.replace(",",".")}}
+function sketch(f){const el=$("#sketch");if(!el)return;const num=v=>{const x=parseFloat(String(v).replace(",","."));return isFinite(x)?x:null};
+  const g=num(f.ground_level_m.value);const h=(n,base)=>{const v=num(f[n].value),ref=f.querySelector(`[name="${n}__ref"]`).value;if(v==null)return null;if(ref==="above_datum")return v;
+    if(ref==="below_ground")return g==null?null:g-v;if(ref==="above_floor")return base==null?null:base+v;return null};
+  const fl=h("floor_level_m"),ov=h("overflow_level_m",fl);const ls=[["site.ground",g,"var(--earth)"],["site.floor",fl,"var(--ink)"],["site.overflow",ov,"var(--crit)"]].filter(x=>x[1]!=null);
+  if(!ls.length){el.innerHTML="";return}const vs=ls.map(x=>x[1]),hi=Math.max(...vs)+1,lo=Math.min(...vs)-1,Y=v=>10+(hi-v)/(hi-lo)*140;
+  el.innerHTML=`<svg viewBox="0 0 300 160" role="img" aria-label="${esc(t("setup.sketch"))}">${g!=null?`<rect x="0" y="${Y(g)}" width="300" height="${160-Y(g)}" fill="var(--earth)" fill-opacity=".25"/>`:""}
+    ${fl!=null?`<rect x="90" y="${Y(Math.max(g??fl,ov??fl))}" width="80" height="${Y(fl)-Y(Math.max(g??fl,ov??fl))}" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`:""}
+    ${ls.map(([k,v,c])=>`<line x1="20" x2="240" y1="${Y(v)}" y2="${Y(v)}" stroke="${c}" stroke-dasharray="4 3"/><text x="244" y="${Y(v)+4}" font-size="11" fill="${c}">${esc(t(k))} ${v.toFixed(2)}</text>`).join("")}</svg>`}
+async function submitForm(f){
+  const {kind,isNew,item}=FORM,data={key:f.key.value.trim()};
+  for(const [name,type] of fieldsFor(kind,item)){
+    if(type==="map"||type==="sketch")continue;
+    if(type==="height"){if(kind==="sensor"&&f.querySelector('[data-height="mount_level_m"]').hidden)continue;const hv=heightValue(f,name);if(hv!=null||!isNew)data[name]=hv;continue}
+    if(name==="area"){const a=f.area.value.trim();if(a){const fl=heightValue(f,"floor_level_m"),ov=heightValue(f,"overflow_level_m");data.area_curve_json=[[0,+a],[30,+a]]}continue}
+    const el=f[name];if(!el)continue;let v=el.value;
+    if(type==="number"||type==="coord")v=v.trim()===""?null:(type==="number"?+v.replace(",","."):v.trim());
+    if(name==="component"&&v==="")v=null;
+    if(isNew&&(v===""||v==null))continue;
+    data[name]=v;
+  }
+  if(item.site&&kind!=="site")data.site=item.site;
+  if(kind==="sensor"&&data.display_unit)data.limits_unit=data.display_unit;
+  const box=$("#formProblems");box.innerHTML="";
+  try{const r=await post("/api/setup",{action:"save",kind,data});
+    $("#dlg").close();toast(r.pending?t("setup.proposed"):isNew?t("setup.saved_draft"):t("setup.saved"));
+    if(r.warnings&&r.warnings.length)setTimeout(()=>toast(t("setup.notes")+" "+r.warnings.join(" · ")),600);
+    await reloadTree();if(VIEW==="site"&&SITE)openSite(kind==="site"?data.key:SITE,true);else if(VIEW==="setup")showSetup();
+  }catch(e){if(e.message==="name")return;const b=e.body||{};
+    box.innerHTML=`<div class="problems"><strong>${esc(t("setup.not_saved"))}</strong><ul>${(b.problems||[e.message]).map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`+
+      (b.warnings&&b.warnings.length?`<div class="problems warn"><strong>${esc(t("setup.notes"))}</strong><ul>${b.warnings.map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`:"");box.scrollIntoView({block:"nearest"})}
+}
+function newForm(kind,preset){openForm(kind,{...(preset||{}),...(kind==="system"&&TREE.regions[0]?{region:TREE.regions[0].key}:{}),...(kind==="site"&&!preset?.system&&SYS?{system:SYS}:{}),
+  ...(kind==="sensor"?{quantity:"pressure",source:CONF.sources[0]}:{}),...(kind==="site"?{site_type:"pumping_station",criticality:2}:{}),...(kind==="region"?{timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,language:LANG}:{})},true)}
+async function editForm(kind,key){try{const it=await api(`/api/setup/item?kind=${kind}&key=${encodeURIComponent(key)}`);if(it._pending)Object.assign(it,it._pending.change);openForm(kind,it,false)}catch(e){toast(t("m.error",{e:e.message}))}}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(!b)return;const [k,key]=b.dataset.edit.split(":");editForm(k,key)});
+async function goLive(kind,key){try{const r=await post("/api/setup",{action:"go_live",kind,key});toast(t("setup.live_done",{n:r.live})+(r.warnings&&r.warnings.length?" "+t("setup.notes")+" "+r.warnings.join(" · "):""));await reloadTree();
+  if(VIEW==="site")openSite(SITE,true);else showSetup()}catch(e){if(e.message!=="name")toast((e.body&&e.body.problems?t("setup.not_saved")+" "+e.body.problems.join(" · "):t("m.error",{e:e.message})))}}
+function manualForm(s){const d=$("#dlg"),f=$("#dlgForm");
+  f.innerHTML=`<div class="dlg-head"><h2 style="margin:0">${esc(t("site.manual"))}: ${esc(s.name)}</h2><button class="btn small" value="cancel">${esc(t("m.close"))}</button></div>
+  <div class="fields">${nameField()}<div class="field"><label for="m_s">${esc(t("site.sensors"))}</label><select id="m_s">${s.sensors.map(x=>`<option value="${esc(x.key)}">${esc(x.name)}</option>`).join("")}</select></div>
+  <div class="field"><label for="m_v">${esc(t("f.value"))}</label><input id="m_v" inputmode="decimal"></div><div class="field"><label for="m_u">${esc(t("f.unit"))}</label><select id="m_u"></select></div></div>
+  <div id="formProblems"></div><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn primary" id="m_save" value="default">${esc(t("setup.save"))}</button></div>`;
+  const fill=()=>{const x=s.sensors.find(z=>z.key===$("#m_s").value),q=CONF.quantities[x.quantity];$("#m_u").innerHTML=[x.display.unit.replace("³","3"),...q.units].filter((v,i,a)=>a.indexOf(v)===i).map(u=>`<option>${esc(u)}</option>`).join("")};$("#m_s").onchange=fill;fill();
+  $("#m_save").onclick=async e=>{e.preventDefault();try{await post("/api/readings/manual",{sensor:$("#m_s").value,value:+$("#m_v").value.replace(",","."),unit:$("#m_u").value});d.close();toast(t("m.manual_done"));openSite(s.key,true)}
+    catch(err){if(err.message!=="name")$("#formProblems").innerHTML=`<div class="problems">${esc((err.body&&err.body.problems||[err.message]).join(" · "))}</div>`}};d.showModal()}
+
+/* ---------- setup ---------- */
+async function showSetup(){
+  const el=$("#v-setup");el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
+  const [pending,unmapped]=ST?[[],{}]:await Promise.all([api("/api/setup/pending"),api("/api/setup/unmapped")]);
+  const sysSites=await api("/api/map");
+  const add=k=>ST?"":`<button class="btn small" data-new="${k}">${esc(t("setup.add."+k))}</button>`;
+  const chip=s=>`<span class="chip ${s}">${esc(t("status."+s))}</span>`;
+  const tree=TREE.regions.length?`<ul>${TREE.regions.map(r=>`<li><strong>${esc(r.name)}</strong> <span class="small muted">${esc(r.timezone)}${r.datum?" · "+esc(r.datum):""}</span> ${ST?"":`<button class="btn small" data-edit="region:${esc(r.key)}">${esc(t("setup.edit"))}</button>`}
+      <ul>${r.systems.map(s=>`<li>${chip(s.status)} <strong>${esc(s.name)}</strong> <span class="small muted">${esc(t("nt."+s.network_type))} · ${esc(t("setup.sites_count",{n:s.sites,s:s.sensors}))}</span>
+        ${ST?"":`<button class="btn small" data-edit="system:${esc(s.key)}">${esc(t("setup.edit"))}</button>${s.status!=="live"?`<button class="btn small primary" data-live="system:${esc(s.key)}">${esc(t("setup.go_live"))}</button>`:""}<button class="btn small" data-new="site" data-sys="${esc(s.key)}">${esc(t("setup.add.site"))}</button>`}
+        <ul>${sysSites.sites.filter(x=>x.system===s.key).map(x=>`<li>${chip(x.status==="live"?"live":"draft")} <a href="#" data-site="${esc(x.key)}">${esc(x.name)}</a> <span class="small muted">${esc(t("st."+x.site_type))}</span>
+          ${!ST&&x.status!=="live"&&s.status==="live"?`<button class="btn small primary" data-live="site:${esc(x.key)}">${esc(t("setup.go_live"))}</button>`:""}</li>`).join("")}</ul></li>`).join("")}</ul></li>`).join("")}</ul>`:`<p>${esc(t("setup.empty"))}</p>`;
+  const um=Object.entries(unmapped).flatMap(([src,tags])=>Object.entries(tags).map(([tag,info])=>({src,tag,info})));
+  el.innerHTML=`<div class="grid-ov"><div class="panel"><h2>${esc(t("setup.title"))}</h2><p class="small muted">${esc(t("setup.intro"))}</p>
+      <div class="row" style="margin-bottom:10px">${add("region")}${add("system")}${add("site")}</div><div class="tree">${tree}</div></div>
+    <div><div class="panel"><h2>${esc(t("setup.pending"))}</h2>${pending.length?pending.map(p=>`<div class="alert"><strong>${esc(p.name)}</strong> <span class="small muted">${esc(p.kind)} · ${esc(t("setup.proposed_by",{who:p.by}))} · ${esc(fmtT(p.t_ms,true))}</span>
+        <div class="small mono">${esc(Object.entries(p.change).filter(([k])=>k!=="key").map(([k,v])=>k+" → "+(typeof v==="object"?JSON.stringify(v):v)).join("; "))}</div>
+        <div class="acts" style="margin-top:6px"><button class="btn small primary" data-apply="${esc(p.kind)}:${esc(p.key)}">${esc(t("setup.apply"))}</button><button class="btn small" data-discard="${esc(p.kind)}:${esc(p.key)}">${esc(t("setup.discard"))}</button></div></div>`).join(""):`<div class="small muted">${esc(t("setup.none"))}</div>`}</div>
+      <div class="panel" style="margin-top:14px"><h2>${esc(t("setup.unmapped"))}</h2>${um.length?`<table>${um.slice(0,50).map(u=>`<tr><td class="mono">${esc(u.tag)}<div class="small muted">${esc(u.src)} · ${u.info.count}×</div></td><td>${ST?"":`<button class="btn small" data-tag="${esc(u.src)}|${esc(u.tag)}">${esc(t("setup.add_for_tag",{tag:u.tag}))}</button>`}</td></tr>`).join("")}</table>`:`<div class="small muted">${esc(t("setup.none"))}</div>`}</div>
+      <div class="panel" style="margin-top:14px"><div class="row">${ST?"":`<label class="btn">${esc(t("setup.import"))}<input type="file" id="importFile" accept=".json,application/json" hidden></label>`}<button class="btn" id="exportBtn">${esc(t("setup.export"))}</button></div></div></div></div>`;
+  el.querySelectorAll("[data-new]").forEach(b=>b.onclick=()=>newForm(b.dataset.new,b.dataset.sys?{system:b.dataset.sys}:null));
+  el.querySelectorAll("[data-live]").forEach(b=>b.onclick=()=>{const [k,key]=b.dataset.live.split(":");goLive(k,key)});
+  el.querySelectorAll("a[data-site]").forEach(a=>a.onclick=e=>{e.preventDefault();openSite(a.dataset.site)});
+  el.querySelectorAll("[data-apply],[data-discard]").forEach(b=>b.onclick=async()=>{const ap=!!b.dataset.apply,[kind,key]=(b.dataset.apply||b.dataset.discard).split(":");
+    try{await post("/api/setup",{action:ap?"apply":"discard",kind,key});toast(t("setup.saved"));await reloadTree();showSetup()}catch(e){if(e.message!=="name")toast(e.body&&e.body.problems?e.body.problems.join(" · "):e.message)}});
+  el.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>{const [src,tag]=b.dataset.tag.split("|");const site=prompt(t("f.site")+" (key)",SITE||"");if(!site)return;
+    openSite(site).then(()=>newForm("sensor",{site,source:src,source_tag:tag,name:tag,key:(site+"-"+tag).toLowerCase().replace(/[^a-z0-9_.:-]/g,"-")}))});
+  const imp=$("#importFile");if(imp)imp.onchange=async()=>{try{const bundle=JSON.parse(await imp.files[0].text());const r=await post("/api/setup/import",{bundle});
+    toast(t("setup.imported",{what:Object.entries(r.counts).map(([k,n])=>n+" "+k).join(", ")}));await reloadTree();showSetup()}catch(e){if(e.message!=="name")toast(e.body&&e.body.problems?t("setup.not_saved")+" "+e.body.problems.slice(0,4).join(" · "):e.message)}};
+  $("#exportBtn").onclick=async()=>{const b=await api("/api/setup/export");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(b,null,1)],{type:"application/json"}));a.download="waterworks-setup.json";a.click()};
+}
+
+/* ---------- audit trail ---------- */
+async function showLog(){
+  const el=$("#v-log");el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
+  const [log,v]=await Promise.all([api("/api/log"),api("/api/log/verify")]);
+  el.innerHTML=`<div class="panel"><h2>${esc(t("log.title"))}</h2><p>${v.ok?`<span class="chip ok">✓ ${esc(t("log.ok",{n:v.entries}))}</span>`:`<span class="chip critical">${esc(t("log.broken",{seq:v.problems[0].seq,problem:v.problems[0].problem}))}</span>`}</p>
+    <table><thead><tr><th>${esc(t("log.when"))}</th><th>${esc(t("log.who"))}</th><th>${esc(t("log.what"))}</th></tr></thead><tbody>
+    ${log.slice().reverse().slice(0,500).map(e=>`<tr><td class="small mono">${esc(fmtT(e.t,true))}</td><td>${esc(e.actor)}</td><td>${esc(e.msg)}<div class="small muted mono">#${e.seq} · ${esc(e.kind)} · ${esc(e.hash.slice(0,12))}</div></td></tr>`).join("")}</tbody></table></div>`;
+}
+
+/* ---------- views and start-up ---------- */
+function setView(v){VIEW=v;if(v!=="site"&&location.hash)history.replaceState(null,"",location.pathname+location.search);for(const s of ["overview","site","setup","log"])$("#v-"+s).hidden=s!==v;$$("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.view===(v==="site"?"overview":v)?"page":"false"));
+  if(v==="overview"&&map)setTimeout(()=>map.invalidateSize(),50)}
+async function render(){if(VIEW==="overview")await showOverview();else if(VIEW==="site")await openSite(SITE,true);else if(VIEW==="setup")await showSetup();else await showLog()}
+async function reloadTree(){TREE=await api("/api/tree");const sel=$("#sysPick");
+  sel.innerHTML=`<option value="">${esc(t("sys.all"))}</option>`+TREE.regions.flatMap(r=>r.systems.map(s=>`<option value="${esc(s.key)}">${esc(s.name)} · ${esc(t("nt."+s.network_type))}</option>`)).join("");
+  if(![...sel.options].some(o=>o.value===SYS))SYS="";sel.value=SYS}
+function savePrefs(){lsSet("wwd.prefs",{lang:LANG,sys:SYS,name:$("#you").value})}
+async function start(){
+  CONF=await api("/api/config");if(ST)Object.assign(CONF,{static:true});
+  await loadLang(prefs.lang||CONF.language||"en");
+  $("#lang").value=LANG;$("#title").textContent=CONF.title;document.title=CONF.title+(ST?" · demo":"");
+  $("#you").value=prefs.name||"";$("#pass").hidden=!CONF.write_protected||!!ST;if(ST){$("#you").hidden=true}
+  applyWords();await reloadTree();
+  const banners=()=>{if(ST||CONF.clock_mode!=="now"){$("#clock").textContent=t("clock.judged",{time:fmtT(CONF.clock_ms,true)})}
+    if(ST){$("#demo").hidden=false;$("#demo").textContent=t("demo.banner",{time:fmtT(CONF.clock_ms,true)})}};banners();
+  $("#foot").innerHTML=`Waterworks Desk ${esc(CONF.version)}${(CONF.credits||[]).length?" · "+esc(t("credits"))+": "+CONF.credits.map(c=>c.url?`<a href="${esc(c.url)}" rel="noopener">${esc(c.text)}</a>`:esc(c.text)).join(" · "):""}`;
+  $$("nav.tabs button").forEach(b=>b.onclick=()=>{setView(b.dataset.view);render()});
+  $("#sysPick").onchange=e=>{SYS=e.target.value;savePrefs();if(VIEW==="site")setView("overview");render()};
+  $("#lang").onchange=async e=>{await loadLang(e.target.value);savePrefs();applyWords();banners();await reloadTree();
+    if(map&&!CONF.map.tile_url){map.attributionControl.removeAttribution(map._wwdNote);map._wwdNote=esc(t("map.no_tiles"));map.attributionControl.addAttribution(map._wwdNote)}render()};
+  $("#you").onchange=savePrefs;$("#showShelved").onchange=refreshAlerts;
+  const h=new URLSearchParams(location.hash.slice(1));if(h.get("site")){await openSite(h.get("site"))}else{setView("overview");await render()}
+  window.addEventListener("hashchange",()=>{const k=new URLSearchParams(location.hash.slice(1)).get("site");if(k&&k!==SITE)openSite(k)});
+  if(!ST)setInterval(()=>{if(VIEW==="overview"&&!$("#dlg").open)refreshAlerts().catch(()=>{})},60000);
+}
+start().catch(e=>{document.querySelector("main").innerHTML=`<div class="empty">Couldn't start: ${esc(e.message)}</div>`});
+})();
 </script>
 </body>
 </html>

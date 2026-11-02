@@ -15,7 +15,7 @@ import time
 NETWORK_TYPES = ("drinking_water", "sanitary_sewer", "storm_drain", "combined_sewer")
 STATUSES = ("draft", "live", "retired")
 SEVERITIES = ("critical", "warning", "advisory")
-ROLLUP_RES = (60, 900, 3600)   # 1 minute, 15 minutes, 1 hour
+ROLLUP_RES = (60, 900, 3600, 86400)   # 1 minute, 15 minutes, 1 hour, 1 day (UTC days)
 
 # Quality codes stored with every reading.
 GOOD, SUSPECT, BAD, MANUAL = 0, 1, 2, 3
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS components (
   model_id INTEGER REFERENCES component_models(id),
   serial TEXT NOT NULL DEFAULT '',
   install_date TEXT,                        -- YYYY-MM-DD
-  criticality INTEGER NOT NULL DEFAULT 2 CHECK (criticality BETWEEN 1 AND 3),
+  criticality INTEGER CHECK (criticality BETWEEN 1 AND 3),   -- NULL: same as its site
   note TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','live','retired')),
   created_ms INTEGER NOT NULL,
@@ -141,7 +141,8 @@ CREATE TABLE IF NOT EXISTS alerts (
   id INTEGER PRIMARY KEY,
   severity TEXT NOT NULL CHECK (severity IN ('critical','warning','advisory')),
   rule TEXT NOT NULL,
-  sensor_id INTEGER, site_id INTEGER, component_id INTEGER,
+  ident TEXT NOT NULL,                      -- rule + what it's about; one open alert per ident
+  system_id INTEGER, sensor_id INTEGER, site_id INTEGER, component_id INTEGER,
   message TEXT NOT NULL,                    -- one plain sentence: what, where, since when, why, first check
   start_ms INTEGER NOT NULL, end_ms INTEGER,
   ack_ms INTEGER, ack_by TEXT,
@@ -149,6 +150,15 @@ CREATE TABLE IF NOT EXISTS alerts (
   data_json TEXT NOT NULL DEFAULT '{}'
 );
 CREATE INDEX IF NOT EXISTS alerts_open ON alerts (end_ms, severity);
+CREATE INDEX IF NOT EXISTS alerts_ident ON alerts (ident, end_ms);
+CREATE TABLE IF NOT EXISTS pending_changes (   -- edits to live items wait here until someone applies them
+  kind TEXT NOT NULL,
+  key TEXT NOT NULL,
+  data_json TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  t_ms INTEGER NOT NULL,
+  PRIMARY KEY (kind, key)
+);
 CREATE TABLE IF NOT EXISTS work_orders (
   id INTEGER PRIMARY KEY,
   component_id INTEGER NOT NULL REFERENCES components(id),

@@ -79,7 +79,7 @@ def build(inp, origin_lat, origin_lon, source="ltown"):
                       "lat": lat, "lon": lon, "ground_level_m": e, "floor_level_m": e,
                       "overflow_level_m": {"ref": "above_floor", "value": hi},
                       "area_curve_json": [[0, area], [hi, area]], "criticality": 1})
-        sensors.append({"key": f"ltown-{tid.lower()}-level", "site": f"ltown-{tid.lower()}", "name": f"Tank {tid} level",
+        sensors.append({"key": f"ltown-{tid.lower()}-level", "site": f"ltown-{tid.lower()}", "name": "Water level",
                         "quantity": "level", "source": source, "source_tag": tid, "source_unit": "m",
                         "mount_level_m": {"ref": "above_floor", "value": 0}, "range_lo": 0, "range_hi": hi,
                         "warn_lo": max(lo, 0.5), "expected_interval_s": 300})
@@ -107,7 +107,7 @@ def build(inp, origin_lat, origin_lon, source="ltown"):
         sites.append({"key": sk, "system": "ltown-dw", "name": name, "site_type": "district_meter", "lat": lat, "lon": lon,
                       "ground_level_m": elev.get(links[link][0])})
         comps.append({"key": f"{sk}-fm", "site": sk, "name": "Flow meter", "component_type": "flow_meter"})
-        sensors.append({"key": f"{sk}-flow", "site": sk, "component": f"{sk}-fm", "name": f"{name} flow",
+        sensors.append({"key": f"{sk}-flow", "site": sk, "component": f"{sk}-fm", "name": "Inflow",
                         "quantity": "flow", "source": source, "source_tag": link, "source_unit": "m3/h",
                         "expected_interval_s": 300})
     for n in PRESSURE_SENSORS:
@@ -115,7 +115,7 @@ def build(inp, origin_lat, origin_lon, source="ltown"):
         sk = f"ltown-pl-{n}"
         sites.append({"key": sk, "system": "ltown-dw", "name": f"Pressure logger {n}", "site_type": "pressure_logger",
                       "lat": lat, "lon": lon, "ground_level_m": elev[n], "criticality": 3})
-        sensors.append({"key": f"{sk}-p", "site": sk, "name": f"Network pressure at {n}", "quantity": "pressure",
+        sensors.append({"key": f"{sk}-p", "site": sk, "name": "Pressure", "quantity": "pressure",
                         "source": source, "source_tag": n, "source_unit": "m",
                         "mount_level_m": {"ref": "above_ground", "value": 0}, "range_lo": 0, "range_hi": 100,
                         "expected_interval_s": 300})

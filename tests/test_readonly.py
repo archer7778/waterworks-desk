@@ -120,8 +120,8 @@ def test_modbus_trap_records_writes():
 
 def test_every_network_adapter_passes_the_trap():
     """Each adapter with network = True must provide trap_test(trap) and make no writes.
-    (M0 has only the CSV adapter, which doesn't use the network; MQTT, OPC UA and historian
-    adapters arrive in M4 and are held to this test from their first commit.)"""
+    MQTT, OPC UA and historian adapters (M4) are held to this from their first commit."""
+    checked = []
     for name, cls in sources.ADAPTERS.items():
         if not getattr(cls, "network", False):
             continue
@@ -131,5 +131,9 @@ def test_every_network_adapter_passes_the_trap():
             try:
                 cls.trap_test(trap)
                 assert not trap.violations, f"{name} tried to write: {trap.violations}"
+                if getattr(trap, "url", None):
+                    assert trap.reads, f"{name} didn't read anything from the trap"
             finally:
                 trap.close()
+        checked.append(name)
+    assert "open_meteo" in checked

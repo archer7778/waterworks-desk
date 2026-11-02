@@ -281,7 +281,7 @@ def _clean(conn, kind, data, existing, known_sources):
         elif cur("component_type") and cur("component_type") not in COMPONENT_TYPES:
             warnings.append(f"{cur('component_type')!r} isn't a component type the catalogue knows yet")
         take("serial", text)
-        take("criticality", lambda x: int(_num(x)))
+        take("criticality", lambda x: None if _num(x) is None else int(_num(x)))
         if cur("criticality") is not None and cur("criticality") not in (1, 2, 3):
             errors.append("criticality is 1 (highest), 2 or 3")
         if data.get("install_date"):
@@ -529,6 +529,12 @@ def go_live(conn, kind, key, actor, known_sources=None):
     for k, i in items:
         n += conn.execute(f"UPDATE {KINDS[k][0]} SET status='live', updated_ms=? WHERE id=? AND status='draft'",
                           (now_ms(), i)).rowcount
+    keys = {(k, conn.execute(f"SELECT key FROM {KINDS[k][0]} WHERE id=?", (i,)).fetchone()[0]) for k, i in items}
+    for p in conn.execute("SELECT kind, key, data_json FROM pending_changes").fetchall():
+        if (p["kind"], p["key"]) in keys:
+            save(conn, p["kind"], json.loads(p["data_json"]), actor, known_sources, commit=False)
+            conn.execute("DELETE FROM pending_changes WHERE kind=? AND key=?", (p["kind"], p["key"]))
+            n += 1
     logchain.append(conn, "go_live", {"kind": kind, "key": key, "items": n},
                     f"Put {kind} {r['name']} ({key}) live" + (f" with {n - 1} item(s) under it" if n > 1 else "") + ".",
                     actor, commit=False)
@@ -570,7 +576,7 @@ def import_bundle(conn, bundle, actor, known_sources=None, make_live=False, sour
     return {"counts": counts, "warnings": warnings, "live": live}
 
 
-def export_bundle(conn, include_retired=False):
+def export_bundle(conn, include_retired=False, only=None):
     """Everything set up by hand, as a bundle that import_bundle can read back."""
     out = {}
     refs = {"system": ("region", "regions", "region_id"), "zone": ("system", "systems", "system_id"),
@@ -578,9 +584,14 @@ def export_bundle(conn, include_retired=False):
             "sensor": ("site", "sites", "site_id")}
     for kind in BUNDLE_ORDER:
         table, _, editable = KINDS[kind]
+        if only and only[0] != kind:
+            continue
         where = "" if include_retired or kind not in HAS_STATUS else " WHERE status!='retired'"
+        args = ()
+        if only:
+            where, args = " WHERE id=?", (only[1],)
         items = []
-        for r in conn.execute(f"SELECT * FROM {table}{where} ORDER BY id"):
+        for r in conn.execute(f"SELECT * FROM {table}{where} ORDER BY id", args):
             d = {"key": r["key"]}
             if kind in refs:
                 pk, pt, pc = refs[kind]
@@ -609,3 +620,89 @@ def export_bundle(conn, include_retired=False):
         if items:
             out[kind + "s"] = items
     return out
+
+
+# ---------- changes to live items wait until someone applies them ----------
+
+def is_live(conn, kind, key):
+    if kind not in HAS_STATUS:
+        return False
+    r = _row(conn, KINDS[kind][0], key)
+    return r is not None and r["status"] == "live"
+
+
+def propose(conn, kind, data, actor, known_sources=None):
+    """Check a change to a live item and park it until it's applied. Nothing about the live item
+    changes yet. A second proposal for the same item replaces the first."""
+    actor = _actor(actor)
+    key = str(data.get("key") or "").strip()
+    if not is_live(conn, kind, key):
+        raise SetupError([f"{key!r} isn't live; save it directly"])
+    conn.commit()
+    conn.execute("SAVEPOINT dry_run")
+    try:
+        res = save(conn, kind, data, actor, known_sources, commit=False, audit=False)
+    finally:
+        conn.execute("ROLLBACK TO dry_run")
+        conn.execute("RELEASE dry_run")
+    conn.execute("INSERT INTO pending_changes(kind,key,data_json,actor,t_ms) VALUES(?,?,?,?,?) "
+                 "ON CONFLICT(kind,key) DO UPDATE SET data_json=excluded.data_json, actor=excluded.actor, t_ms=excluded.t_ms",
+                 (kind, key, json.dumps(data, default=str), actor, now_ms()))
+    logchain.append(conn, "setup", {"kind": kind, "key": key, "action": "propose", "change": data},
+                    f"Proposed a change to live {kind} {key}; it waits until someone applies it.", actor, commit=False)
+    conn.commit()
+    return {"key": key, "pending": True, "warnings": res["warnings"]}
+
+
+def pending(conn):
+    out = []
+    for r in conn.execute("SELECT * FROM pending_changes ORDER BY t_ms"):
+        table = KINDS[r["kind"]][0]
+        cur = _row(conn, table, r["key"])
+        data = json.loads(r["data_json"])
+        out.append({"kind": r["kind"], "key": r["key"], "by": r["actor"], "t_ms": r["t_ms"], "change": data,
+                    "name": cur["name"] if cur is not None else r["key"]})
+    return out
+
+
+def apply_pending(conn, kind, key, actor, known_sources=None):
+    actor = _actor(actor)
+    r = conn.execute("SELECT * FROM pending_changes WHERE kind=? AND key=?", (kind, key)).fetchone()
+    if r is None:
+        raise SetupError([f"there is no pending change to {kind} {key}"])
+    res = save(conn, kind, json.loads(r["data_json"]), actor, known_sources, commit=False)
+    conn.execute("DELETE FROM pending_changes WHERE kind=? AND key=?", (kind, key))
+    logchain.append(conn, "go_live", {"kind": kind, "key": key, "proposed_by": r["actor"]},
+                    f"Applied the change to {kind} {key} proposed by {r['actor']}.", actor, commit=False)
+    conn.commit()
+    return {**res, "applied": True}
+
+
+def discard_pending(conn, kind, key, actor):
+    actor = _actor(actor)
+    n = conn.execute("DELETE FROM pending_changes WHERE kind=? AND key=?", (kind, key)).rowcount
+    if not n:
+        raise SetupError([f"there is no pending change to {kind} {key}"])
+    logchain.append(conn, "setup", {"kind": kind, "key": key, "action": "discard"},
+                    f"Discarded the pending change to {kind} {key}.", actor, commit=False)
+    conn.commit()
+    return {"key": key, "discarded": True}
+
+
+def item(conn, kind, key):
+    """One item in setup-file form (limits in its display unit), for the edit forms."""
+    table = KINDS[kind][0]
+    r = _row(conn, table, key)
+    if r is None:
+        return None
+    b = export_bundle(conn, include_retired=True, only=(kind, r["id"]))
+    d = b[kind + "s"][0]
+    if kind == "sensor" and r["display_unit"]:
+        for c in ("range_lo", "range_hi", "alarm_lo", "warn_lo", "warn_hi", "alarm_hi"):
+            if d.get(c) is not None:
+                d[c] = round(units.from_canonical(r["quantity"], r["display_unit"], d[c]), 6)
+        d["limits_unit"] = r["display_unit"]
+    p = conn.execute("SELECT data_json, actor FROM pending_changes WHERE kind=? AND key=?", (kind, key)).fetchone()
+    if p:
+        d["_pending"] = {"change": json.loads(p["data_json"]), "by": p["actor"]}
+    return d

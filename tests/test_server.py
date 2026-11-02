@@ -69,7 +69,7 @@ def test_reads():
         assert wl["latest"]["value"] == 1.2
         assert abs(wl["latest"]["level_above_datum_m"] - (-1.3 + 1.2)) < 1e-9     # zero point + reading
         raw = get(base, f"/api/sensors/ps1-flow/readings?from={t0}&to={t0 + 3600}")
-        assert raw["res"] == "raw" and len(raw["t"]) == 61 and raw["unit"] == "m3/h"
+        assert raw["res"] == "raw" and len(raw["t"]) == 61 and raw["unit"] == "m3/h" and raw["display"]["unit"] == "l/s"
         hourly = get(base, f"/api/sensors/ps1-flow/readings?from={t0}&to={t0 + 6 * 3600}&res=3600")
         assert hourly["res"] == 3600 and hourly["n"][:5] == [60] * 5
         assert get(base, "/api/sensors/ps1-flow/readings?from=0&to=99999999999")["res"] == "raw"   # few points: raw, whatever the span

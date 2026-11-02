@@ -2,14 +2,17 @@
 
 A read-only operations console for water supply, sewer and drainage networks. It reads every
 data source a utility has, groups readings the way the utility is organised (region, system,
-site, component, sensor) and, from M1 on, tells an operator in plain words what is normal,
-what is drifting and what needs attention.
+site, component, sensor), puts every site on a map and tells an operator in plain words what
+needs attention, and why.
 
 It is built from the engine of [Downlink Desk](https://github.com/archer7778/downlink-desk) and
-runs on the Python standard library, on anything from a Raspberry Pi 5 to a small server.
+runs on the Python standard library on any ordinary computer or small server.
 
-**Status: M0, the foundation.** Storage, setup by hand, the CSV adapter, the read-only
-guards and the API are in place and tested. The map, setup screens and alerts arrive in M1.
+**Status: M1.** The console has a map of every site at its GPS position, a page per site
+with a side view of wells and tanks and charts with limits and rain, setup screens for
+everything, critical/warning/advisory alerts in plain language, and the signed audit trail,
+in English and Vietnamese. A read-only public demo on the BattLeDIM L-Town data builds itself
+on GitHub Pages. Next (M2): the learned normal, sensor-health checks and named accounts.
 
 > **Not a safety system.** The console advises. The utility's SCADA alarms, interlocks and
 > operators stay in charge. It never sends a command to a pump, valve, gate or PLC.
@@ -19,13 +22,15 @@ guards and the API are in place and tested. The map, setup screens and alerts ar
 | Part | What it does |
 |---|---|
 | `waterworks_desk/model.py` | Setting up by hand: regions, systems (drinking water, sanitary sewer, storm drain, combined sewer), zones, sites, components, sensors. Checks in plain words, drafts and go-live, heights typed the way people measure them. |
-| `waterworks_desk/sources/` | Read-only adapters. M0: CSV (wide or long, any delimiter, decimal commas, time zones). |
-| `waterworks_desk/ingest.py` | Reads sources, converts units, stores readings, keeps 1-minute, 15-minute and hourly rollups, applies retention. |
+| `waterworks_desk/sources/` | Read-only adapters: CSV (wide or long, any delimiter, decimal commas, time zones) and Open-Meteo weather. |
+| `waterworks_desk/alerts.py` | Critical, warning and advisory alerts: limits, silent sensors and sites, overflow and tank levels, failing sources. Severity moved by criticality; one alert per problem; acknowledge and shelve are signed. |
+| `waterworks_desk/ingest.py` | Reads sources, converts units, stores readings, keeps 1-minute, 15-minute, hourly and daily rollups, applies retention, then judges alerts. |
 | `waterworks_desk/units.py` | One canonical unit per quantity (pressure in metres of head, flow in m³/h, …). |
 | `waterworks_desk/logchain.py` | The signed audit trail. Every change names the person who made it. |
-| `waterworks_desk/server.py` | JSON API and the console page. |
-| `tests/` | End-to-end tests, the read-only checks and write traps, and a real-data test on L-Town. |
-| `tools/` | `ltown_setup.py` (demo setup from the L-Town model), `loadtest.py` (storage sizing). |
+| `waterworks_desk/server.py` | JSON API and the console (`web/index.html`, with Leaflet bundled so the map works offline; words in `web/i18n/`). |
+| `waterworks_desk/export_static.py` | A read-only snapshot of the console as static files, for the public demo. |
+| `tests/` | End-to-end tests, the read-only checks and write traps, a real-data test on L-Town, and a browser test of setting up a site by hand. |
+| `tools/` | `build_demo.py` (the whole public demo), `ltown_setup.py` (setup from the L-Town model), `loadtest.py` (storage sizing). |
 
 ## Quick start
 
@@ -36,7 +41,7 @@ python -m waterworks_desk.ingest          # read the sources once
 python -m waterworks_desk.server          # http://127.0.0.1:8080
 ```
 
-On a Raspberry Pi or other Debian machine, `./deploy/install.sh` installs it as services.
+On a Debian-based machine (a Raspberry Pi included), `./deploy/install.sh` installs it as services.
 Automatic updates are **off** by default; update by hand after reviewing changes with
 `sudo deploy/update.sh --now`.
 
@@ -73,6 +78,28 @@ use this), or in bulk from a setup file:
   signed audit trail with what changed.
 - `--export FILE` writes the whole setup back out in the same format.
 
+## Alerts
+
+Every alert is one sentence: what, where, since when, why it matters and what to check first.
+*Critical* means act now, *warning* means this shift, *advisory* means plan for it. Severity
+starts from the rule and moves with criticality (1 raises an advisory to a warning; 3 lowers a
+step). A limit alert opens after two readings in a row past the limit and clears after two
+back inside; if the same problem returns within 24 hours its alert reopens and counts the
+return, so a daily dip is one alert, not one a day. Drafts never alert. Acknowledging and
+shelving (always with a reason, for up to 7 days) are signed into the audit trail. Phone
+alerts go through ntfy: critical loud, warning quiet.
+
+They are called alerts, never alarms: the utility's SCADA alarms stay in charge.
+
+## The public demo
+
+`tools/build_demo.py` builds it with the same code a real installation runs: it sets up L-Town
+from its EPANET model, reads 2018, gives each sensor demo limits just outside anything it read
+in 2018, puts everything live, reads 2019 and replays the year hour by hour so the alerts it
+would have raised are in the history, then exports the read-only console.
+`.github/workflows/demo.yml` downloads the data from Zenodo (checking every file's checksum),
+builds and publishes it to GitHub Pages.
+
 ## Data sources
 
 Every source is read-only, enforced twice: a code scan of `sources/` fails the build on any
@@ -97,6 +124,7 @@ WATERWORKS_LTOWN_DIR=/path/to/battledim python -m pytest tests/test_ltown.py -q 
 
 ## Data credits
 
+- Weather: [Open-Meteo](https://open-meteo.com/), CC BY 4.0.
 - L-Town demo: BattLeDIM dataset, Vrachimis et al. (2020), Zenodo
   [10.5281/zenodo.4017659](https://doi.org/10.5281/zenodo.4017659), CC BY 4.0. The data
   isn't in this repository; download it from Zenodo. The demo places L-Town at a labelled
@@ -104,4 +132,5 @@ WATERWORKS_LTOWN_DIR=/path/to/battledim python -m pytest tests/test_ltown.py -q 
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). Bundled: [Leaflet](https://leafletjs.com/) 1.9.4, BSD 2-Clause
+(`web/vendor/leaflet/LICENSE`).

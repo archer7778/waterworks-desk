@@ -45,6 +45,6 @@ settle_seconds = 0
     t1 = conn.execute("SELECT r.value FROM readings r JOIN sensors s ON s.id=r.sensor_id WHERE s.source_tag='T1' "
                       "ORDER BY r.ts LIMIT 1").fetchone()[0]
     assert t1 == pytest.approx(3.5)
-    # 5-minute data gets 15-minute and hourly rollups, not 1-minute copies
+    # 5-minute data gets 15-minute, hourly and daily rollups, not 1-minute copies
     res = dict(conn.execute("SELECT res, COUNT(*) FROM rollups GROUP BY res").fetchall())
-    assert res == {900: 35_040 * 4, 3600: 8_760 * 4}
+    assert res == {900: 35_040 * 4, 3600: 8_760 * 4, 86400: 365 * 4}
