@@ -552,7 +552,7 @@ async function showSetup(){
         <div class="small mono">${esc(Object.entries(p.change).filter(([k])=>k!=="key").map(([k,v])=>k+" → "+(typeof v==="object"?JSON.stringify(v):v)).join("; "))}</div>
         <div class="acts" style="margin-top:6px"><button class="btn small primary" data-apply="${esc(p.kind)}:${esc(p.key)}">${esc(t("setup.apply"))}</button><button class="btn small" data-discard="${esc(p.kind)}:${esc(p.key)}">${esc(t("setup.discard"))}</button></div></div>`).join(""):`<div class="small muted">${esc(t("setup.none"))}</div>`}</div>
       <div class="panel" style="margin-top:14px"><h2>${esc(t("setup.unmapped"))}</h2>${um.length?`<table>${um.slice(0,50).map(u=>`<tr><td class="mono">${esc(u.tag)}<div class="small muted">${esc(u.src)} · ${u.info.count}×</div></td><td>${ST?"":`<button class="btn small" data-tag="${esc(u.src)}|${esc(u.tag)}">${esc(t("setup.add_for_tag",{tag:u.tag}))}</button>`}</td></tr>`).join("")}</table>`:`<div class="small muted">${esc(t("setup.none"))}</div>`}</div>
-      <div class="panel" style="margin-top:14px"><div class="row">${ST?"":`<label class="btn">${esc(t("setup.import"))}<input type="file" id="importFile" accept=".json,application/json" hidden></label>`}<button class="btn" id="exportBtn">${esc(t("setup.export"))}</button></div></div></div></div>`;
+      <div class="panel" style="margin-top:14px"><div class="row">${ST?"":`<label class="btn">${esc(t("setup.import"))}<input type="file" id="importFile" accept=".json,application/json" hidden></label>`}${ST?"":`<button class="btn" id="exportBtn">${esc(t("setup.export"))}</button>`}</div></div></div></div>`;
   el.querySelectorAll("[data-new]").forEach(b=>b.onclick=()=>newForm(b.dataset.new,b.dataset.sys?{system:b.dataset.sys}:null));
   el.querySelectorAll("[data-live]").forEach(b=>b.onclick=()=>{const [k,key]=b.dataset.live.split(":");goLive(k,key)});
   el.querySelectorAll("a[data-site]").forEach(a=>a.onclick=e=>{e.preventDefault();openSite(a.dataset.site)});
@@ -562,7 +562,7 @@ async function showSetup(){
     openSite(site).then(()=>newForm("sensor",{site,source:src,source_tag:tag,name:tag,key:(site+"-"+tag).toLowerCase().replace(/[^a-z0-9_.:-]/g,"-")}))});
   const imp=$("#importFile");if(imp)imp.onchange=async()=>{try{const bundle=JSON.parse(await imp.files[0].text());const r=await post("/api/setup/import",{bundle});
     toast(t("setup.imported",{what:Object.entries(r.counts).map(([k,n])=>n+" "+k).join(", ")}));await reloadTree();showSetup()}catch(e){if(e.message!=="name")toast(e.body&&e.body.problems?t("setup.not_saved")+" "+e.body.problems.slice(0,4).join(" · "):e.message)}};
-  $("#exportBtn").onclick=async()=>{const b=await api("/api/setup/export");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(b,null,1)],{type:"application/json"}));a.download="waterworks-setup.json";a.click()};
+  if($("#exportBtn"))$("#exportBtn").onclick=async()=>{const b=await api("/api/setup/export");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(b,null,1)],{type:"application/json"}));a.download="waterworks-setup.json";a.click()};
 }
 
 /* ---------- audit trail ---------- */
