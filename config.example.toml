@@ -1,0 +1,40 @@
+# Waterworks Desk configuration. Copy to config.toml and edit.
+# How this installation runs lives here. The network itself (regions, systems, sites,
+# components, sensors) is set up by hand in the console, or imported from a setup file.
+
+[server]
+host = "127.0.0.1"          # "0.0.0.0" to let other computers on your network open the console
+port = 8080
+write_passcode = ""         # set one before anyone else can reach the console
+
+[storage]
+db = "data/waterworks-desk.db"
+raw_days = 90               # raw readings kept this long (0 = forever). Rollups keep the history.
+minute_days = 400           # 1-minute rollups kept this long (0 = forever); 15-min and hourly always kept
+
+[ingest]
+poll_minutes = 5            # how often the sources are read
+
+[notify]
+# Phone alerts through ntfy. The public ntfy.sh is for demos only: a real deployment uses a
+# self-hosted ntfy server, so site and alert status never pass through a third party.
+ntfy_topic = ""
+ntfy_server = "https://ntfy.sh"
+console_url = ""
+summary_hour = 7
+
+[updates]
+auto_update = false         # keep false near a real utility network; update by hand after review
+
+# Data sources. Every source is read-only. One [[sources]] table per source.
+[[sources]]
+key = "exports"
+type = "csv"
+path = "data/import"        # a folder of CSV exports (or one file)
+pattern = "*.csv"
+layout = "wide"             # "wide": a time column then one column per tag; "long": time, tag, value
+timezone = "UTC"            # time zone of the timestamps in the files
+# delimiter = "auto"        # worked out from the file unless set
+# decimal = "auto"          # "." or "," (28,92); worked out unless set
+# timestamp_column = "Timestamp"
+# timestamp_format = "%d/%m/%Y %H:%M"

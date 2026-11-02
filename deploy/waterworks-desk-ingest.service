@@ -1,0 +1,20 @@
+[Unit]
+Description=Waterworks Desk: read new readings from every configured source (read-only)
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=@USER@
+WorkingDirectory=@ROOT@
+Environment=WATERWORKS_DESK_CONFIG=@ROOT@/config.toml
+ExecStart=@ROOT@/.venv/bin/python -m waterworks_desk.ingest
+Nice=10
+
+# Sandboxing: no privilege gain, a private /tmp, and the operating system read-only.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes

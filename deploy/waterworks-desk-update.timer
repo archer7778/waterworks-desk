@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for Waterworks Desk updates after boot and every night
+
+[Timer]
+OnBootSec=5min
+OnCalendar=*-*-* 03:30:00
+RandomizedDelaySec=20min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waterworks Desk</title>
+<style>
+  :root { --bg:#f7f8f6; --fg:#16201d; --muted:#5d6b66; --line:#d9dfdc; --card:#fff; --live:#1d7a4f; --draft:#9a6a00; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111614; --fg:#e7ece9; --muted:#9aa8a2; --line:#2a3330; --card:#182019; --live:#5fd19b; --draft:#e2b04a; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; }
+  main { max-width:960px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:24px; margin:0 0 4px; } h2 { font-size:19px; margin:28px 0 8px; }
+  .muted { color:var(--muted); }
+  .note { border:1px solid var(--line); background:var(--card); border-radius:10px; padding:12px 14px; margin:16px 0; }
+  .sys { border:1px solid var(--line); background:var(--card); border-radius:10px; padding:12px 14px; margin:10px 0; }
+  .sys b { font-size:17px; } .tag { font-size:13px; padding:1px 8px; border-radius:99px; border:1px solid currentColor; margin-left:6px; }
+  .live { color:var(--live); } .draft { color:var(--draft); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Waterworks Desk</h1>
+  <div class="muted" id="ver"></div>
+  <div class="note">This is the M0 foundation: data storage, setup and the API. The map, setup screens and alerts arrive in M1.
+    The console only reads data; it never sends commands to a pump, valve, gate or PLC. It advises; SCADA alarms, interlocks and operators stay in charge.</div>
+  <div id="tree"><p class="muted">Loading…</p></div>
+</main>
+<script>
+const NT = {drinking_water:"Drinking water", sanitary_sewer:"Sanitary sewer", storm_drain:"Storm drain", combined_sewer:"Combined sewer"};
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+fetch("/api/health").then(r => r.json()).then(h => { document.getElementById("ver").textContent = "Version " + h.version; }).catch(() => {});
+fetch("/api/tree").then(r => r.json()).then(t => {
+  const el = document.getElementById("tree");
+  if (!t.regions.length) { el.innerHTML = '<p>Nothing is set up yet. Import a setup file with <code>python -m waterworks_desk.ingest --setup FILE --actor "Your name"</code>.</p>'; return; }
+  el.innerHTML = t.regions.map(r => `<h2>${esc(r.name)}</h2><div class="muted">${esc(r.timezone)}${r.datum ? " · heights above " + esc(r.datum) : ""}${r.note ? " · " + esc(r.note) : ""}</div>` +
+    r.systems.map(s => `<div class="sys"><b>${esc(s.name)}</b><span class="tag ${s.status}">${s.status === "live" ? "Live" : "Draft"}</span>
+      <div class="muted">${NT[s.network_type] || esc(s.network_type)} · ${s.sites} site${s.sites === 1 ? "" : "s"} (${s.sites_live} live) · ${s.sensors} sensor${s.sensors === 1 ? "" : "s"}</div></div>`).join("")).join("");
+}).catch(() => { document.getElementById("tree").innerHTML = "<p>Couldn't load the network. Is the server running?</p>"; });
+</script>
+</body>
+</html>

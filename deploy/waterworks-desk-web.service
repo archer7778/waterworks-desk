@@ -1,0 +1,23 @@
+[Unit]
+Description=Waterworks Desk console web server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@USER@
+WorkingDirectory=@ROOT@
+Environment=WATERWORKS_DESK_CONFIG=@ROOT@/config.toml
+ExecStart=@ROOT@/.venv/bin/python -m waterworks_desk.server
+Restart=on-failure
+RestartSec=10
+
+# Sandboxing: no privilege gain, a private /tmp, and the operating system read-only.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

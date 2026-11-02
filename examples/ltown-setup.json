@@ -1,0 +1,1082 @@
+{
+ "regions": [
+  {
+   "key": "ltown",
+   "name": "L-Town (demo, stand-in location)",
+   "timezone": "UTC",
+   "datum": "L-Town model datum (EPANET elevations)",
+   "lat": 35.0069198,
+   "lon": 33.0148068,
+   "radius_km": 25,
+   "note": "BattLeDIM's L-Town placed at a stand-in location; it is not where the network is. Data: BattLeDIM, Zenodo 10.5281/zenodo.4017659, CC BY 4.0."
+  }
+ ],
+ "systems": [
+  {
+   "key": "ltown-dw",
+   "region": "ltown",
+   "name": "L-Town drinking water",
+   "network_type": "drinking_water",
+   "departments": [
+    "operations",
+    "maintenance",
+    "instruments"
+   ]
+  }
+ ],
+ "sites": [
+  {
+   "key": "ltown-r1",
+   "system": "ltown-dw",
+   "name": "Reservoir R1",
+   "site_type": "reservoir",
+   "lat": 35.0090075,
+   "lon": 33.02879,
+   "ground_level_m": 100.0,
+   "criticality": 1,
+   "note": "Fixed head 100.00 m in the model."
+  },
+  {
+   "key": "ltown-r2",
+   "system": "ltown-dw",
+   "name": "Reservoir R2",
+   "site_type": "reservoir",
+   "lat": 35.0065512,
+   "lon": 33.0033978,
+   "ground_level_m": 100.0,
+   "criticality": 1,
+   "note": "Fixed head 100.00 m in the model."
+  },
+  {
+   "key": "ltown-t1",
+   "system": "ltown-dw",
+   "name": "Tank T1",
+   "site_type": "tank",
+   "lat": 35.0095738,
+   "lon": 33.0048069,
+   "ground_level_m": 98.68,
+   "floor_level_m": 98.68,
+   "overflow_level_m": {
+    "ref": "above_floor",
+    "value": 4.0
+   },
+   "area_curve_json": [
+    [
+     0,
+     201.06
+    ],
+    [
+     4.0,
+     201.06
+    ]
+   ],
+   "criticality": 1
+  },
+  {
+   "key": "ltown-pump1-station",
+   "system": "ltown-dw",
+   "name": "Pumping station (PUMP_1)",
+   "site_type": "pumping_station",
+   "lat": 35.0094898,
+   "lon": 33.0050725,
+   "ground_level_m": 36.6718,
+   "criticality": 1
+  },
+  {
+   "key": "ltown-prv-1",
+   "system": "ltown-dw",
+   "name": "Pressure reducing valve PRV-1",
+   "site_type": "pressure_reducing_valve",
+   "lat": 35.0088542,
+   "lon": 33.0284426,
+   "ground_level_m": 34.4994,
+   "note": "Set to 40 m in the model."
+  },
+  {
+   "key": "ltown-prv-2",
+   "system": "ltown-dw",
+   "name": "Pressure reducing valve PRV-2",
+   "site_type": "pressure_reducing_valve",
+   "lat": 35.0060577,
+   "lon": 33.0034976,
+   "ground_level_m": 26.0,
+   "note": "Set to 50 m in the model."
+  },
+  {
+   "key": "ltown-prv-3",
+   "system": "ltown-dw",
+   "name": "Pressure reducing valve PRV-3",
+   "site_type": "pressure_reducing_valve",
+   "lat": 35.004967,
+   "lon": 33.0175488,
+   "ground_level_m": 21.5781,
+   "note": "Set to 35 m in the model."
+  },
+  {
+   "key": "ltown-meter-p227",
+   "system": "ltown-dw",
+   "name": "District inlet meter (p227)",
+   "site_type": "district_meter",
+   "lat": 35.0089414,
+   "lon": 33.0286664,
+   "ground_level_m": null
+  },
+  {
+   "key": "ltown-meter-p235",
+   "system": "ltown-dw",
+   "name": "District inlet meter (p235)",
+   "site_type": "district_meter",
+   "lat": 35.0063899,
+   "lon": 33.0034218,
+   "ground_level_m": null
+  },
+  {
+   "key": "ltown-pl-n1",
+   "system": "ltown-dw",
+   "name": "Pressure logger n1",
+   "site_type": "pressure_logger",
+   "lat": 35.0132286,
+   "lon": 33.0000351,
+   "ground_level_m": 73.2105,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n4",
+   "system": "ltown-dw",
+   "name": "Pressure logger n4",
+   "site_type": "pressure_logger",
+   "lat": 35.0112255,
+   "lon": 33.0005659,
+   "ground_level_m": 68.2608,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n31",
+   "system": "ltown-dw",
+   "name": "Pressure logger n31",
+   "site_type": "pressure_logger",
+   "lat": 35.0091964,
+   "lon": 33.0024838,
+   "ground_level_m": 65.0059,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n54",
+   "system": "ltown-dw",
+   "name": "Pressure logger n54",
+   "site_type": "pressure_logger",
+   "lat": 35.0094058,
+   "lon": 33.0053382,
+   "ground_level_m": 36.6718,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n105",
+   "system": "ltown-dw",
+   "name": "Pressure logger n105",
+   "site_type": "pressure_logger",
+   "lat": 35.0042933,
+   "lon": 33.0021672,
+   "ground_level_m": 24.022,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n114",
+   "system": "ltown-dw",
+   "name": "Pressure logger n114",
+   "site_type": "pressure_logger",
+   "lat": 35.0018319,
+   "lon": 33.0011548,
+   "ground_level_m": 20.4764,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n163",
+   "system": "ltown-dw",
+   "name": "Pressure logger n163",
+   "site_type": "pressure_logger",
+   "lat": 35.0049036,
+   "lon": 33.0080517,
+   "ground_level_m": 21.6096,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n188",
+   "system": "ltown-dw",
+   "name": "Pressure logger n188",
+   "site_type": "pressure_logger",
+   "lat": 35.0018741,
+   "lon": 33.0087911,
+   "ground_level_m": 18.8768,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n215",
+   "system": "ltown-dw",
+   "name": "Pressure logger n215",
+   "site_type": "pressure_logger",
+   "lat": 35.0027105,
+   "lon": 33.0164859,
+   "ground_level_m": 2.0066,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n229",
+   "system": "ltown-dw",
+   "name": "Pressure logger n229",
+   "site_type": "pressure_logger",
+   "lat": 35.0050229,
+   "lon": 33.0177936,
+   "ground_level_m": 21.5781,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n288",
+   "system": "ltown-dw",
+   "name": "Pressure logger n288",
+   "site_type": "pressure_logger",
+   "lat": 35.0036061,
+   "lon": 33.0233774,
+   "ground_level_m": 21.6218,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n296",
+   "system": "ltown-dw",
+   "name": "Pressure logger n296",
+   "site_type": "pressure_logger",
+   "lat": 35.0076066,
+   "lon": 33.0267784,
+   "ground_level_m": 32.1966,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n332",
+   "system": "ltown-dw",
+   "name": "Pressure logger n332",
+   "site_type": "pressure_logger",
+   "lat": 35.0034654,
+   "lon": 33.0051425,
+   "ground_level_m": 18.0,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n342",
+   "system": "ltown-dw",
+   "name": "Pressure logger n342",
+   "site_type": "pressure_logger",
+   "lat": 35.0069593,
+   "lon": 33.014067,
+   "ground_level_m": 27.36,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n410",
+   "system": "ltown-dw",
+   "name": "Pressure logger n410",
+   "site_type": "pressure_logger",
+   "lat": 35.0112714,
+   "lon": 33.0075174,
+   "ground_level_m": 42.8344,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n415",
+   "system": "ltown-dw",
+   "name": "Pressure logger n415",
+   "site_type": "pressure_logger",
+   "lat": 35.0067932,
+   "lon": 33.0043588,
+   "ground_level_m": 28.5315,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n429",
+   "system": "ltown-dw",
+   "name": "Pressure logger n429",
+   "site_type": "pressure_logger",
+   "lat": 35.0089845,
+   "lon": 33.0084397,
+   "ground_level_m": 37.1457,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n458",
+   "system": "ltown-dw",
+   "name": "Pressure logger n458",
+   "site_type": "pressure_logger",
+   "lat": 35.0069226,
+   "lon": 33.0102123,
+   "ground_level_m": 30.598,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n469",
+   "system": "ltown-dw",
+   "name": "Pressure logger n469",
+   "site_type": "pressure_logger",
+   "lat": 35.0062882,
+   "lon": 33.0009661,
+   "ground_level_m": 26.9995,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n495",
+   "system": "ltown-dw",
+   "name": "Pressure logger n495",
+   "site_type": "pressure_logger",
+   "lat": 35.0049346,
+   "lon": 33.0039001,
+   "ground_level_m": 22.9645,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n506",
+   "system": "ltown-dw",
+   "name": "Pressure logger n506",
+   "site_type": "pressure_logger",
+   "lat": 35.0028321,
+   "lon": 33.0030993,
+   "ground_level_m": 20.955,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n516",
+   "system": "ltown-dw",
+   "name": "Pressure logger n516",
+   "site_type": "pressure_logger",
+   "lat": 35.0003638,
+   "lon": 33.0021483,
+   "ground_level_m": 19.5392,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n519",
+   "system": "ltown-dw",
+   "name": "Pressure logger n519",
+   "site_type": "pressure_logger",
+   "lat": 35.0064927,
+   "lon": 33.0063483,
+   "ground_level_m": 26.6257,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n549",
+   "system": "ltown-dw",
+   "name": "Pressure logger n549",
+   "site_type": "pressure_logger",
+   "lat": 35.0011813,
+   "lon": 33.0053761,
+   "ground_level_m": 19.5515,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n613",
+   "system": "ltown-dw",
+   "name": "Pressure logger n613",
+   "site_type": "pressure_logger",
+   "lat": 35.0041343,
+   "lon": 33.0135339,
+   "ground_level_m": 17.9988,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n636",
+   "system": "ltown-dw",
+   "name": "Pressure logger n636",
+   "site_type": "pressure_logger",
+   "lat": 35.0077857,
+   "lon": 33.0192922,
+   "ground_level_m": 28.7889,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n644",
+   "system": "ltown-dw",
+   "name": "Pressure logger n644",
+   "site_type": "pressure_logger",
+   "lat": 35.0068204,
+   "lon": 33.0187901,
+   "ground_level_m": 26.669,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n679",
+   "system": "ltown-dw",
+   "name": "Pressure logger n679",
+   "site_type": "pressure_logger",
+   "lat": 35.0068498,
+   "lon": 33.022261,
+   "ground_level_m": 27.1045,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n722",
+   "system": "ltown-dw",
+   "name": "Pressure logger n722",
+   "site_type": "pressure_logger",
+   "lat": 35.0062752,
+   "lon": 33.02776,
+   "ground_level_m": 28.4498,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n726",
+   "system": "ltown-dw",
+   "name": "Pressure logger n726",
+   "site_type": "pressure_logger",
+   "lat": 35.0057668,
+   "lon": 33.0254928,
+   "ground_level_m": 27.3736,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n740",
+   "system": "ltown-dw",
+   "name": "Pressure logger n740",
+   "site_type": "pressure_logger",
+   "lat": 35.0074322,
+   "lon": 33.0285711,
+   "ground_level_m": 30.9904,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n752",
+   "system": "ltown-dw",
+   "name": "Pressure logger n752",
+   "site_type": "pressure_logger",
+   "lat": 35.0046528,
+   "lon": 33.026815,
+   "ground_level_m": 25.3141,
+   "criticality": 3
+  },
+  {
+   "key": "ltown-pl-n769",
+   "system": "ltown-dw",
+   "name": "Pressure logger n769",
+   "site_type": "pressure_logger",
+   "lat": 35.0047186,
+   "lon": 33.0295377,
+   "ground_level_m": 26.1136,
+   "criticality": 3
+  }
+ ],
+ "components": [
+  {
+   "key": "ltown-pump1-station-pump",
+   "site": "ltown-pump1-station",
+   "name": "Pump 1",
+   "component_type": "centrifugal_pump"
+  },
+  {
+   "key": "ltown-prv-1-valve",
+   "site": "ltown-prv-1",
+   "name": "PRV-1",
+   "component_type": "pressure_reducing_valve"
+  },
+  {
+   "key": "ltown-prv-2-valve",
+   "site": "ltown-prv-2",
+   "name": "PRV-2",
+   "component_type": "pressure_reducing_valve"
+  },
+  {
+   "key": "ltown-prv-3-valve",
+   "site": "ltown-prv-3",
+   "name": "PRV-3",
+   "component_type": "pressure_reducing_valve"
+  },
+  {
+   "key": "ltown-meter-p227-fm",
+   "site": "ltown-meter-p227",
+   "name": "Flow meter",
+   "component_type": "flow_meter"
+  },
+  {
+   "key": "ltown-meter-p235-fm",
+   "site": "ltown-meter-p235",
+   "name": "Flow meter",
+   "component_type": "flow_meter"
+  }
+ ],
+ "sensors": [
+  {
+   "key": "ltown-t1-level",
+   "site": "ltown-t1",
+   "name": "Tank T1 level",
+   "quantity": "level",
+   "source": "ltown",
+   "source_tag": "T1",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_floor",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 4.0,
+   "warn_lo": 0.5,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pump1-station-flow",
+   "site": "ltown-pump1-station",
+   "component": "ltown-pump1-station-pump",
+   "name": "Pump 1 flow",
+   "quantity": "flow",
+   "source": "ltown",
+   "source_tag": "PUMP_1",
+   "source_unit": "m3/h",
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-meter-p227-flow",
+   "site": "ltown-meter-p227",
+   "component": "ltown-meter-p227-fm",
+   "name": "District inlet meter (p227) flow",
+   "quantity": "flow",
+   "source": "ltown",
+   "source_tag": "p227",
+   "source_unit": "m3/h",
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-meter-p235-flow",
+   "site": "ltown-meter-p235",
+   "component": "ltown-meter-p235-fm",
+   "name": "District inlet meter (p235) flow",
+   "quantity": "flow",
+   "source": "ltown",
+   "source_tag": "p235",
+   "source_unit": "m3/h",
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n1-p",
+   "site": "ltown-pl-n1",
+   "name": "Network pressure at n1",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n1",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n4-p",
+   "site": "ltown-pl-n4",
+   "name": "Network pressure at n4",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n4",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n31-p",
+   "site": "ltown-pl-n31",
+   "name": "Network pressure at n31",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n31",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n54-p",
+   "site": "ltown-pl-n54",
+   "name": "Network pressure at n54",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n54",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n105-p",
+   "site": "ltown-pl-n105",
+   "name": "Network pressure at n105",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n105",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n114-p",
+   "site": "ltown-pl-n114",
+   "name": "Network pressure at n114",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n114",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n163-p",
+   "site": "ltown-pl-n163",
+   "name": "Network pressure at n163",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n163",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n188-p",
+   "site": "ltown-pl-n188",
+   "name": "Network pressure at n188",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n188",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n215-p",
+   "site": "ltown-pl-n215",
+   "name": "Network pressure at n215",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n215",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n229-p",
+   "site": "ltown-pl-n229",
+   "name": "Network pressure at n229",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n229",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n288-p",
+   "site": "ltown-pl-n288",
+   "name": "Network pressure at n288",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n288",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n296-p",
+   "site": "ltown-pl-n296",
+   "name": "Network pressure at n296",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n296",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n332-p",
+   "site": "ltown-pl-n332",
+   "name": "Network pressure at n332",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n332",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n342-p",
+   "site": "ltown-pl-n342",
+   "name": "Network pressure at n342",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n342",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n410-p",
+   "site": "ltown-pl-n410",
+   "name": "Network pressure at n410",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n410",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n415-p",
+   "site": "ltown-pl-n415",
+   "name": "Network pressure at n415",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n415",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n429-p",
+   "site": "ltown-pl-n429",
+   "name": "Network pressure at n429",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n429",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n458-p",
+   "site": "ltown-pl-n458",
+   "name": "Network pressure at n458",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n458",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n469-p",
+   "site": "ltown-pl-n469",
+   "name": "Network pressure at n469",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n469",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n495-p",
+   "site": "ltown-pl-n495",
+   "name": "Network pressure at n495",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n495",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n506-p",
+   "site": "ltown-pl-n506",
+   "name": "Network pressure at n506",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n506",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n516-p",
+   "site": "ltown-pl-n516",
+   "name": "Network pressure at n516",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n516",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n519-p",
+   "site": "ltown-pl-n519",
+   "name": "Network pressure at n519",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n519",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n549-p",
+   "site": "ltown-pl-n549",
+   "name": "Network pressure at n549",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n549",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n613-p",
+   "site": "ltown-pl-n613",
+   "name": "Network pressure at n613",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n613",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n636-p",
+   "site": "ltown-pl-n636",
+   "name": "Network pressure at n636",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n636",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n644-p",
+   "site": "ltown-pl-n644",
+   "name": "Network pressure at n644",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n644",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n679-p",
+   "site": "ltown-pl-n679",
+   "name": "Network pressure at n679",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n679",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n722-p",
+   "site": "ltown-pl-n722",
+   "name": "Network pressure at n722",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n722",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n726-p",
+   "site": "ltown-pl-n726",
+   "name": "Network pressure at n726",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n726",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n740-p",
+   "site": "ltown-pl-n740",
+   "name": "Network pressure at n740",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n740",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n752-p",
+   "site": "ltown-pl-n752",
+   "name": "Network pressure at n752",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n752",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  },
+  {
+   "key": "ltown-pl-n769-p",
+   "site": "ltown-pl-n769",
+   "name": "Network pressure at n769",
+   "quantity": "pressure",
+   "source": "ltown",
+   "source_tag": "n769",
+   "source_unit": "m",
+   "mount_level_m": {
+    "ref": "above_ground",
+    "value": 0
+   },
+   "range_lo": 0,
+   "range_hi": 100,
+   "expected_interval_s": 300
+  }
+ ]
+}

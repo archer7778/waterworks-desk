@@ -1,0 +1,10 @@
+[Unit]
+Description=Waterworks Desk: check GitHub for updates and apply them
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Runs as root so it can restart the console; git and pip run as @USER@.
+ExecStart=@ROOT@/deploy/update.sh
+Nice=10
