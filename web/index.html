@@ -367,7 +367,7 @@ function limitText(x){const L=x.limits;const lo=L.alarm_lo??L.warn_lo,hi=L.alarm
   return `${esc(t(out?"site.outside":"site.inside"))} <span class="muted">(${esc(rng)})</span>`}
 async function openSite(key,keepChart){
   SITE=key;setView("site");const el=$("#v-site");if(!keepChart)CHART.sensor=null;
-  if(location.hash!=="#site="+encodeURIComponent(key))history.replaceState(null,"","#site="+encodeURIComponent(key));
+  try{if(location.hash!=="#site-"+key)history.replaceState(null,"","#site-"+key)}catch(e){}
   el.innerHTML=`<div class="empty">${esc(t("m.loading"))}</div>`;
   let s;try{s=await api("/api/sites/"+encodeURIComponent(key))}catch(e){el.innerHTML=`<div class="empty">${esc(t("m.error",{e:e.message}))}</div>`;return}
   SITEDATA=s;const worst=s.alerts.filter(a=>a.end_ms==null).map(a=>a.severity).sort((a,b)=>({critical:0,warning:1,advisory:2}[a]-{critical:0,warning:1,advisory:2}[b]))[0];
@@ -575,7 +575,8 @@ async function showLog(){
 }
 
 /* ---------- views and start-up ---------- */
-function setView(v){VIEW=v;if(v!=="site"&&location.hash)history.replaceState(null,"",location.pathname+location.search);for(const s of ["overview","site","setup","log"])$("#v-"+s).hidden=s!==v;$$("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.view===(v==="site"?"overview":v)?"page":"false"));
+const hashSite=()=>{const h=decodeURIComponent(location.hash.slice(1));return h.startsWith("site-")?h.slice(5):h.startsWith("site=")?h.slice(5):null};
+function setView(v){VIEW=v;if(v!=="site"&&location.hash)try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}for(const s of ["overview","site","setup","log"])$("#v-"+s).hidden=s!==v;$$("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.view===(v==="site"?"overview":v)?"page":"false"));
   if(v==="overview"&&map)setTimeout(()=>map.invalidateSize(),50)}
 async function render(){if(VIEW==="overview")await showOverview();else if(VIEW==="site")await openSite(SITE,true);else if(VIEW==="setup")await showSetup();else await showLog()}
 async function reloadTree(){TREE=await api("/api/tree");const sel=$("#sysPick");
@@ -596,8 +597,8 @@ async function start(){
   $("#lang").onchange=async e=>{await loadLang(e.target.value);savePrefs();applyWords();banners();await reloadTree();
     if(map&&!CONF.map.tile_url){map.attributionControl.removeAttribution(map._wwdNote);map._wwdNote=esc(t("map.no_tiles"));map.attributionControl.addAttribution(map._wwdNote)}render()};
   $("#you").onchange=savePrefs;$("#showShelved").onchange=refreshAlerts;
-  const h=new URLSearchParams(location.hash.slice(1));if(h.get("site")){await openSite(h.get("site"))}else{setView("overview");await render()}
-  window.addEventListener("hashchange",()=>{const k=new URLSearchParams(location.hash.slice(1)).get("site");if(k&&k!==SITE)openSite(k)});
+  const hs=hashSite();if(hs){await openSite(hs)}else{setView("overview");await render()}
+  window.addEventListener("hashchange",()=>{const k=hashSite();if(k&&k!==SITE)openSite(k)});
   if(!ST)setInterval(()=>{if(VIEW==="overview"&&!$("#dlg").open)refreshAlerts().catch(()=>{})},60000);
 }
 start().catch(e=>{document.querySelector("main").innerHTML=`<div class="empty">Couldn't start: ${esc(e.message)}</div>`});
